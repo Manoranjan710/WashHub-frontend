@@ -25,3 +25,21 @@ body {
     text-wrap: balance;
   }
 }
+
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialog-pop {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-dialog-fade {
+  animation: dialog-fade 0.2s ease-out;
+}
+
+.animate-dialog-pop {
+  animation: dialog-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}

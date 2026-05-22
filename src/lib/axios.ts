@@ -34,7 +34,12 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // A 401 from the auth endpoints themselves means bad credentials / invalid
+    // refresh token — not an expired access token. Pass it straight to the
+    // caller instead of triggering the refresh-and-redirect flow.
+    const isAuthEndpoint = /\/auth\/(login|register|refresh)/.test(originalRequest.url ?? '');
+
+    if (error.response?.status !== 401 || originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error);
     }
 

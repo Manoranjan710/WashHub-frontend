@@ -187,13 +187,13 @@ export default function AdminDashboardPage() {
                     Suspend
                   </button>
                 )}
-                {center.status === 'rejected' && (
+                {(center.status === 'rejected' || center.status === 'suspended') && (
                   <button
                     onClick={() => approveMutation.mutate(center.id)}
                     disabled={approveMutation.isPending}
                     className="shrink-0 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors"
                   >
-                    Approve
+                    {center.status === 'suspended' ? 'Reactivate' : 'Approve'}
                   </button>
                 )}
               </div>

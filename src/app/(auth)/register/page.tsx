@@ -7,6 +7,7 @@ import { api } from '@/lib/axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthResponse } from '@/types/auth';
 import { ApiSuccess } from '@/types/api';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 type Role = 'customer' | 'vendor';
 
@@ -26,6 +27,7 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<{ message: string; redirect: string } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -42,7 +44,7 @@ export default function RegisterPage() {
       setToken(data.data.accessToken);
 
       const redirect = form.role === 'vendor' ? '/vendor/onboarding' : '/';
-      router.push(redirect);
+      setSuccess({ message: data.message ?? 'Account created successfully!', redirect });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -55,6 +57,15 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-md">
+      <SuccessDialog
+        open={!!success}
+        title="Welcome to WashHub!"
+        message={success?.message ?? ''}
+        actionLabel="Continue"
+        onClose={() => {
+          if (success) router.push(success.redirect);
+        }}
+      />
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <div className="mb-8 text-center">
           <Link href="/" className="text-2xl font-bold text-aqua-500">WashHub</Link>
