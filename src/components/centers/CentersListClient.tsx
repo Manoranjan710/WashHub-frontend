@@ -10,11 +10,28 @@ interface Props {
 }
 
 export default function CentersListClient({ initialCenters }: Props) {
-  const [centers, setCenters]   = useState<CenterSearchResult[]>(initialCenters);
-  const [radius, setRadius]     = useState(10);
-  const [loading, setLoading]   = useState(false);
+  const [centers, setCenters]     = useState<CenterSearchResult[]>(initialCenters);
+  const [radius, setRadius]       = useState(10);
+  const [loading, setLoading]     = useState(false);
   const [geoActive, setGeoActive] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [coords, setCoords]       = useState<{ lat: number; lng: number } | null>(null);
+  const [error, setError]         = useState<string | null>(null);
+
+  async function searchWithCoords(lat: number, lng: number, r: number) {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.get('/centers', {
+        params: { lat, lng, radius: r },
+      });
+      setCenters(data.data ?? []);
+      setGeoActive(true);
+    } catch {
+      setError('Search failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleGeoSearch() {
     if (!navigator.geolocation) {
@@ -26,21 +43,9 @@ export default function CentersListClient({ initialCenters }: Props) {
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        try {
-          const { data } = await api.get('/centers', {
-            params: {
-              lat:    pos.coords.latitude,
-              lng:    pos.coords.longitude,
-              radius,
-            },
-          });
-          setCenters(data.data ?? []);
-          setGeoActive(true);
-        } catch {
-          setError('Search failed. Please try again.');
-        } finally {
-          setLoading(false);
-        }
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(c);
+        await searchWithCoords(c.lat, c.lng, radius);
       },
       () => {
         setError('Location access was denied. Please allow location access and try again.');
@@ -49,9 +54,17 @@ export default function CentersListClient({ initialCenters }: Props) {
     );
   }
 
+  function handleRadiusChange(r: number) {
+    setRadius(r);
+    if (geoActive && coords) {
+      searchWithCoords(coords.lat, coords.lng, r);
+    }
+  }
+
   function handleClear() {
     setCenters(initialCenters);
     setGeoActive(false);
+    setCoords(null);
     setError(null);
   }
 
@@ -59,34 +72,38 @@ export default function CentersListClient({ initialCenters }: Props) {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3 mb-8">
-        <select
-          value={radius}
-          onChange={(e) => setRadius(Number(e.target.value))}
-          disabled={loading}
-          className="border border-aqua-300 rounded-lg px-3 py-2 text-sm text-deepsea-600 bg-white focus:outline-none focus:ring-2 focus:ring-aqua-400 disabled:opacity-50"
-        >
-          {[5, 10, 20, 50].map((r) => (
-            <option key={r} value={r}>Within {r} km</option>
-          ))}
-        </select>
+        {/* Radius + location button grouped together */}
+        <div className="flex items-center rounded-lg border border-aqua-300 overflow-hidden bg-white">
+          <select
+            value={radius}
+            onChange={(e) => handleRadiusChange(Number(e.target.value))}
+            disabled={loading || !geoActive}
+            title={!geoActive ? 'Enable location first to filter by radius' : undefined}
+            className="px-3 py-2 text-sm text-deepsea-600 bg-transparent focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed border-r border-aqua-300"
+          >
+            {[5, 10, 20, 50].map((r) => (
+              <option key={r} value={r}>Within {r} km</option>
+            ))}
+          </select>
 
-        <button
-          onClick={handleGeoSearch}
-          disabled={loading}
-          className="flex items-center gap-2 bg-aqua-500 hover:bg-aqua-600 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          {loading ? (
-            <>
-              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Searching…
-            </>
-          ) : (
-            <>
-              <LocationIcon />
-              Use my location
-            </>
-          )}
-        </button>
+          <button
+            onClick={handleGeoSearch}
+            disabled={loading}
+            className="flex items-center gap-2 bg-aqua-500 hover:bg-aqua-600 disabled:opacity-60 text-white px-4 py-2 text-sm font-medium transition-colors"
+          >
+            {loading ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Searching…
+              </>
+            ) : (
+              <>
+                <LocationIcon />
+                Use my location
+              </>
+            )}
+          </button>
+        </div>
 
         {geoActive && !loading && (
           <button
