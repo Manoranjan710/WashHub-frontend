@@ -37,6 +37,23 @@ export interface Service {
   is_active: boolean;
 }
 
+export interface Review {
+  id: string;
+  booking_id: string;
+  customer_id: string;
+  center_id: string;
+  rating: number;
+  comment?: string | null;
+  vendor_reply?: string | null;
+  created_at: string;
+  customer: { name: string };
+}
+
+export interface CenterDetail extends Center {
+  services: Service[];
+  reviews: Review[];
+}
+
 export interface CreateCenterInput {
   name: string;
   address: string;
