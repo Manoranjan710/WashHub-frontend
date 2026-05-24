@@ -19,7 +19,7 @@ const defaultForm = {
 export default function SlotsTab({ centerId }: Props) {
   const [form, setForm]       = useState(defaultForm);
   const [loading, setLoading] = useState(false);
-  const [result, setResult]   = useState<{ created: number } | null>(null);
+  const [result, setResult]   = useState<{ created: number; skipped: number } | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
   function field(key: keyof typeof form) {
@@ -64,7 +64,8 @@ export default function SlotsTab({ centerId }: Props) {
 
       {result && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          ✓ {result.created} slot{result.created !== 1 ? 's' : ''} generated successfully.
+          ✓ {result.created} slot{result.created !== 1 ? 's' : ''} created
+          {result.skipped > 0 ? `, ${result.skipped} already existed and were skipped.` : '.'}
         </p>
       )}
 
