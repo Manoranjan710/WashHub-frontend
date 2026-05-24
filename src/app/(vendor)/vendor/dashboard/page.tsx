@@ -1,18 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { ApiSuccess } from '@/types/api';
 import { Center, Service } from '@/types/center';
+import ServicesTab from '@/components/vendor/ServicesTab';
+import SlotsTab from '@/components/vendor/SlotsTab';
+import BookingsTab from '@/components/vendor/BookingsTab';
 
 type CenterWithServices = Center & { services: Service[] };
+type TabId = 'services' | 'slots' | 'bookings';
 
-async function fetchMyCenters(): Promise<CenterWithServices[]> {
-  const { data } = await api.get<ApiSuccess<CenterWithServices[]>>('/centers/my');
-  return data.data;
-}
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'services', label: 'Services' },
+  { id: 'slots',    label: 'Slots' },
+  { id: 'bookings', label: 'Bookings' },
+];
 
 const STATUS_STYLES: Record<string, { badge: string; label: string; hint: string }> = {
   pending:   { badge: 'bg-yellow-100 text-yellow-800', label: 'Pending Review',  hint: 'Our team is reviewing your center. You\'ll be notified once approved.' },
@@ -21,14 +27,34 @@ const STATUS_STYLES: Record<string, { badge: string; label: string; hint: string
   suspended: { badge: 'bg-gray-100 text-gray-700',     label: 'Suspended',       hint: 'Your center has been suspended. Contact support.' },
 };
 
+async function fetchMyCenters(): Promise<CenterWithServices[]> {
+  const { data } = await api.get<ApiSuccess<CenterWithServices[]>>('/centers/my');
+  return data.data;
+}
+
 export default function VendorDashboardPage() {
   const { user, isReady } = useAuthGuard('vendor');
 
-  const { data: centers = [], isLoading } = useQuery({
+  const { data: centers = [], isLoading, refetch } = useQuery({
     queryKey: ['vendor', 'centers'],
     queryFn: fetchMyCenters,
     enabled: isReady,
   });
+
+  // Track active tab per center
+  const [activeTabs, setActiveTabs] = useState<Record<string, TabId>>({});
+  const getTab = (id: string) => activeTabs[id] ?? 'services';
+  const setTab = (centerId: string, tab: TabId) =>
+    setActiveTabs(prev => ({ ...prev, [centerId]: tab }));
+
+  // Service list is kept in local state per center so tabs can mutate without refetching
+  const [localServices, setLocalServices] = useState<Record<string, Service[]>>({});
+  function getServices(center: CenterWithServices) {
+    return localServices[center.id] ?? center.services;
+  }
+  function setServices(centerId: string, svcs: Service[]) {
+    setLocalServices(prev => ({ ...prev, [centerId]: svcs }));
+  }
 
   if (!isReady || isLoading) {
     return (
@@ -73,13 +99,16 @@ export default function VendorDashboardPage() {
         </div>
       )}
 
-      {/* Centers list */}
-      {centers.map((center) => {
-        const style = STATUS_STYLES[center.status] ?? STATUS_STYLES['pending'];
+      {/* Center cards */}
+      {centers.map(center => {
+        const style     = STATUS_STYLES[center.status] ?? STATUS_STYLES['pending'];
+        const activeTab = getTab(center.id);
+        const isActive  = center.status === 'active';
+
         return (
           <div key={center.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {/* Center header */}
-            <div className="px-6 py-5 flex items-start justify-between gap-4">
+            <div className="px-6 py-5 flex items-start justify-between gap-4 border-b border-gray-100">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-semibold text-gray-900">{center.name}</h2>
@@ -91,39 +120,52 @@ export default function VendorDashboardPage() {
                 <p className="text-xs text-gray-400 mt-1">{style.hint}</p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-2xl font-bold text-aqua-500">{center.avg_rating > 0 ? center.avg_rating : '—'}</p>
+                <p className="text-2xl font-bold text-aqua-500">
+                  {center.avg_rating > 0 ? Number(center.avg_rating).toFixed(1) : '—'}
+                </p>
                 <p className="text-xs text-gray-400">{center.total_reviews} reviews</p>
               </div>
             </div>
 
-            {/* Services */}
-            <div className="border-t border-gray-100 px-6 py-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700">Services</h3>
-              </div>
-
-              {center.services.length === 0 ? (
-                <p className="text-sm text-gray-400">
-                  {center.status === 'active'
-                    ? 'No services added yet. Add services so customers can book.'
-                    : 'Services can be added once your center is approved.'}
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {center.services.map((svc) => (
-                    <div key={svc.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{svc.name}</p>
-                        <p className="text-xs text-gray-500">{svc.duration_mins} min</p>
-                      </div>
-                      <p className="text-sm font-semibold text-deepsea-600 ml-3 shrink-0">
-                        ₹{Number(svc.price).toLocaleString('en-IN')}
-                      </p>
-                    </div>
+            {/* Tabs — only for active centers */}
+            {isActive ? (
+              <>
+                <div className="flex border-b border-gray-100">
+                  {TABS.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTab(center.id, tab.id)}
+                      className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors
+                        ${activeTab === tab.id
+                          ? 'border-aqua-500 text-aqua-600'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {tab.label}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
+
+                <div className="px-6 py-5">
+                  {activeTab === 'services' && (
+                    <ServicesTab
+                      centerId={center.id}
+                      services={getServices(center)}
+                      onChange={svcs => setServices(center.id, svcs)}
+                    />
+                  )}
+                  {activeTab === 'slots' && (
+                    <SlotsTab centerId={center.id} />
+                  )}
+                  {activeTab === 'bookings' && (
+                    <BookingsTab centerId={center.id} />
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="px-6 py-4 text-sm text-gray-400">
+                Services, slots, and bookings will be available once your center is approved.
+              </div>
+            )}
           </div>
         );
       })}
