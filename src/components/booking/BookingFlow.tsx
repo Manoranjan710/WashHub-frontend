@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, CSSProperties } from 'react';
 import Link from 'next/link';
+import { FixedSizeList } from 'react-window';
 import { api } from '@/lib/axios';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { CenterDetail, Service } from '@/types/center';
@@ -222,29 +223,11 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
             ) : slots.length === 0 ? (
               <p className="text-gray-400 text-center py-8">No slots available on this date.</p>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {slots.map(slot => (
-                  <button
-                    key={slot.id}
-                    disabled={!slot.is_available}
-                    onClick={() => setSelectedSlot(slot)}
-                    className={`rounded-xl border py-3 text-sm font-medium transition-all
-                      ${!slot.is_available
-                        ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
-                        : selectedSlot?.id === slot.id
-                          ? 'border-aqua-500 bg-aqua-500 text-white shadow'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-aqua-400'
-                      }`}
-                  >
-                    {formatTime(slot.start_time)}
-                    {slot.is_available && (
-                      <span className={`block text-xs mt-0.5 ${selectedSlot?.id === slot.id ? 'text-white/70' : 'text-gray-400'}`}>
-                        {slot.available_spots} left
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <VirtualSlotPicker
+                slots={slots}
+                selected={selectedSlot}
+                onSelect={setSelectedSlot}
+              />
             )}
             <StepNav
               onBack={() => setStep('date')}
@@ -348,6 +331,66 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
 }
 
 /* ─── Sub-components ────────────────────────────────────────────────────── */
+
+/* ─── Virtualised slot picker ───────────────────────────────────────────── */
+
+const SLOT_COLS = 3;
+const ROW_HEIGHT = 72; // px per row including gap
+
+function VirtualSlotPicker({
+  slots, selected, onSelect,
+}: {
+  slots: Slot[];
+  selected: Slot | null;
+  onSelect: (s: Slot) => void;
+}) {
+  const rowCount = Math.ceil(slots.length / SLOT_COLS);
+  const listHeight = Math.min(rowCount * ROW_HEIGHT, 288); // cap at ~4 rows
+
+  const Row = ({ index, style }: { index: number; style: CSSProperties }) => (
+    <div style={{ ...style, display: 'flex', gap: 8, paddingBottom: 8 }}>
+      {Array.from({ length: SLOT_COLS }, (_, col) => {
+        const slotIdx = index * SLOT_COLS + col;
+        if (slotIdx >= slots.length) return <div key={col} style={{ flex: 1 }} />;
+        const slot = slots[slotIdx];
+        const isSelected = selected?.id === slot.id;
+        return (
+          <button
+            key={slot.id}
+            disabled={!slot.is_available}
+            onClick={() => onSelect(slot)}
+            style={{ flex: 1 }}
+            className={`rounded-xl border py-3 text-sm font-medium transition-all
+              ${!slot.is_available
+                ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                : isSelected
+                  ? 'border-aqua-500 bg-aqua-500 text-white shadow'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-aqua-400'
+              }`}
+          >
+            {formatTime(slot.start_time)}
+            {slot.is_available && (
+              <span className={`block text-xs mt-0.5 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                {slot.available_spots} left
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <FixedSizeList
+      height={listHeight}
+      itemCount={rowCount}
+      itemSize={ROW_HEIGHT}
+      width="100%"
+    >
+      {Row}
+    </FixedSizeList>
+  );
+}
 
 function StepIndicator({ current }: { current: BookingStep }) {
   const idx = current === 'done' ? 4 : STEP_ORDER.indexOf(current as Exclude<BookingStep, 'done'>);

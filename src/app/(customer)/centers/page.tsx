@@ -1,26 +1,29 @@
 import CentersListClient from '@/components/centers/CentersListClient';
-import { CenterSearchResult } from '@/types/center';
 
-// ISR: regenerate at most once per minute. The default listing (sorted by
-// rating, no location) is identical for every visitor, so static generation
-// with periodic revalidation gives fast loads without stale data for long.
-export const revalidate = 60;
+// SSR: listing is personalised by geo + pagination; no caching at the page level.
+export const dynamic = 'force-dynamic';
 
-async function getDefaultCenters(): Promise<CenterSearchResult[]> {
+interface PageData {
+  centers: import('@/types/center').CenterSearchResult[];
+  hasMore: boolean;
+  page: number;
+}
+
+async function getDefaultCenters(): Promise<PageData> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/centers`, {
-      next: { revalidate: 60 },
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/centers?page=1`, {
+      cache: 'no-store',
     });
-    if (!res.ok) return [];
+    if (!res.ok) return { centers: [], hasMore: false, page: 1 };
     const json = await res.json();
-    return json.data ?? [];
+    return json.data ?? { centers: [], hasMore: false, page: 1 };
   } catch {
-    return [];
+    return { centers: [], hasMore: false, page: 1 };
   }
 }
 
 export default async function CentersPage() {
-  const initialCenters = await getDefaultCenters();
+  const initialData = await getDefaultCenters();
 
   return (
     <>
@@ -33,7 +36,7 @@ export default async function CentersPage() {
       </section>
 
       {/* Listing with client-side geo-search */}
-      <CentersListClient initialCenters={initialCenters} />
+      <CentersListClient initialData={initialData} />
     </>
   );
 }

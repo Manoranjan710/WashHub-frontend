@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import { CenterSearchResult } from '@/types/center';
 
@@ -12,7 +13,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function CenterCard({ center }: { center: CenterSearchResult }) {
+const CenterCard = memo(function CenterCard({ center }: { center: CenterSearchResult }) {
   return (
     <article className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col">
       {/* Card header */}
@@ -59,4 +60,6 @@ export default function CenterCard({ center }: { center: CenterSearchResult }) {
       </div>
     </article>
   );
-}
+});
+
+export default CenterCard;

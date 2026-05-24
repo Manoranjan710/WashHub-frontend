@@ -1,16 +1,20 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import { CenterDetail, Review, Service } from '@/types/center';
 
-// SSR — no revalidate, cache: 'no-store' → fresh data on every request.
-// Reviews can be submitted at any time; ISR would show stale data for too long.
-export const dynamic = 'force-dynamic';
+// ISR — revalidate every 60 s. Services and ratings change infrequently;
+// the 60-second window is a good trade-off between freshness and caching.
+export const revalidate = 60;
+
+// CenterMap uses Leaflet which requires the browser window object → ssr: false
+const CenterMap = dynamic(() => import('@/components/centers/CenterMap'), { ssr: false });
 
 async function getCenter(id: string): Promise<CenterDetail | null> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/centers/${id}`, {
-      cache: 'no-store',
+      next: { revalidate: 60 },
     });
     if (res.status === 404) return null;
     if (!res.ok) return null;
@@ -64,6 +68,16 @@ export default async function CenterDetailPage({ params }: { params: { id: strin
       </section>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+        {/* Map */}
+        <section>
+          <h2 className="text-xl font-semibold text-deepsea-600 mb-4">Location</h2>
+          <CenterMap
+            lat={Number(center.latitude)}
+            lng={Number(center.longitude)}
+            name={center.name}
+          />
+        </section>
+
         {/* Services */}
         <ServicesSection centerId={center.id} services={center.services} />
 
