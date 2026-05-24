@@ -27,9 +27,9 @@ export default function Navbar() {
   };
 
   const dashboardHref =
-    user?.role === 'vendor' ? '/vendor/dashboard' :
-    user?.role === 'admin'  ? '/admin' :
-    '/dashboard';
+    user?.role === 'vendor'   ? '/vendor/dashboard' :
+    user?.role === 'admin'    ? '/admin' :
+    '/bookings/my';
 
   return (
     <>
@@ -55,6 +55,11 @@ export default function Navbar() {
               <Link href="/centers" className="hover:text-aqua-500 transition-colors">
                 Find Centers
               </Link>
+              {user?.role === 'customer' && (
+                <Link href="/bookings/my" className="hover:text-aqua-500 transition-colors">
+                  My Bookings
+                </Link>
+              )}
               {user?.role === 'vendor' && (
                 <Link href="/vendor/dashboard" className="hover:text-aqua-500 transition-colors">
                   My Dashboard
