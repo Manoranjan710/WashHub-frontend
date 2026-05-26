@@ -10,14 +10,16 @@ import { Center, Service } from '@/types/center';
 import ServicesTab from '@/components/vendor/ServicesTab';
 import SlotsTab from '@/components/vendor/SlotsTab';
 import BookingsTab from '@/components/vendor/BookingsTab';
+import ReviewsTab from '@/components/vendor/ReviewsTab';
 
 type CenterWithServices = Center & { services: Service[] };
-type TabId = 'services' | 'slots' | 'bookings';
+type TabId = 'services' | 'slots' | 'bookings' | 'reviews';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'services', label: 'Services' },
   { id: 'slots',    label: 'Slots' },
   { id: 'bookings', label: 'Bookings' },
+  { id: 'reviews',  label: 'Reviews' },
 ];
 
 const STATUS_STYLES: Record<string, { badge: string; label: string; hint: string }> = {
@@ -158,6 +160,9 @@ export default function VendorDashboardPage() {
                   )}
                   {activeTab === 'bookings' && (
                     <BookingsTab centerId={center.id} />
+                  )}
+                  {activeTab === 'reviews' && (
+                    <ReviewsTab centerId={center.id} />
                   )}
                 </div>
               </>

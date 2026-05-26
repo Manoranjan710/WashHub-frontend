@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
-import { CenterDetail, Review, Service } from '@/types/center';
+import { CenterDetail, Service } from '@/types/center';
+import CenterReviews from '@/components/centers/CenterReviews';
 
 // ISR — revalidate every 60 s. Services and ratings change infrequently;
 // the 60-second window is a good trade-off between freshness and caching.
@@ -25,6 +26,19 @@ async function getCenter(id: string): Promise<CenterDetail | null> {
   }
 }
 
+async function getCenterReviews(id: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/centers/${id}/reviews?page=1`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return { reviews: [], total: 0, pages: 0 };
+    const json = await res.json();
+    return json.data ?? { reviews: [], total: 0, pages: 0 };
+  } catch {
+    return { reviews: [], total: 0, pages: 0 };
+  }
+}
+
 export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
@@ -37,7 +51,10 @@ export async function generateMetadata(
 }
 
 export default async function CenterDetailPage({ params }: { params: { id: string } }) {
-  const center = await getCenter(params.id);
+  const [center, reviewsData] = await Promise.all([
+    getCenter(params.id),
+    getCenterReviews(params.id),
+  ]);
   if (!center) notFound();
 
   return (
@@ -82,7 +99,13 @@ export default async function CenterDetailPage({ params }: { params: { id: strin
         <ServicesSection centerId={center.id} services={center.services} />
 
         {/* Reviews */}
-        <ReviewsSection reviews={center.reviews} total={center.total_reviews} />
+        <section>
+          <div className="flex items-baseline gap-3 mb-5">
+            <h2 className="text-xl font-semibold text-deepsea-600">Customer Reviews</h2>
+            <span className="text-sm text-gray-400">{center.total_reviews} total</span>
+          </div>
+          <CenterReviews centerId={center.id} initialData={reviewsData} />
+        </section>
       </div>
     </div>
   );
@@ -131,58 +154,6 @@ function ServicesSection({ centerId, services }: { centerId: string; services: S
         </div>
       )}
     </section>
-  );
-}
-
-/* ─── Reviews ───────────────────────────────────────────────────────────────── */
-
-function ReviewsSection({ reviews, total }: { reviews: Review[]; total: number }) {
-  return (
-    <section>
-      <div className="flex items-baseline gap-3 mb-5">
-        <h2 className="text-xl font-semibold text-deepsea-600">Customer Reviews</h2>
-        <span className="text-sm text-gray-400">{total} total</span>
-      </div>
-
-      {reviews.length === 0 ? (
-        <p className="text-gray-400">No reviews yet. Be the first to leave one after your visit!</p>
-      ) : (
-        <div className="space-y-4">
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ReviewCard({ review }: { review: Review }) {
-  const date = new Date(review.created_at).toLocaleDateString('en-IN', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  });
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-800">{review.customer.name}</span>
-          <StarRow rating={review.rating} small />
-        </div>
-        <span className="text-xs text-gray-400">{date}</span>
-      </div>
-
-      {review.comment && (
-        <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
-      )}
-
-      {review.vendor_reply && (
-        <div className="border-l-2 border-aqua-400 pl-3 bg-arctic-100/40 rounded-r-lg py-2 pr-3">
-          <p className="text-xs font-semibold text-deepsea-600 mb-1">Response from owner</p>
-          <p className="text-sm text-gray-600">{review.vendor_reply}</p>
-        </div>
-      )}
-    </div>
   );
 }
 

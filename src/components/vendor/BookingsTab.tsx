@@ -5,7 +5,7 @@ import { api } from '@/lib/axios';
 
 interface VendorBooking {
   id: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   price_paid: number;
   created_at: string;
   customer: { name: string; email: string; phone?: string | null };
@@ -18,6 +18,7 @@ const STATUS_STYLE: Record<VendorBooking['status'], string> = {
   confirmed: 'bg-aqua-100 text-aqua-700',
   completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-500',
+  no_show:   'bg-red-100 text-red-600',
 };
 
 function formatDate(iso: string) {
@@ -40,6 +41,7 @@ export default function BookingsTab({ centerId }: Props) {
   const [dateFilter, setDateFilter]     = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [noShowId,     setNoShowId]     = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -69,6 +71,18 @@ export default function BookingsTab({ centerId }: Props) {
     }
   }
 
+  async function handleNoShow(bookingId: string) {
+    setNoShowId(bookingId);
+    try {
+      await api.patch(`/bookings/${bookingId}/noshow`);
+      setBookings(prev =>
+        prev.map(b => b.id === bookingId ? { ...b, status: 'no_show' } : b)
+      );
+    } finally {
+      setNoShowId(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -89,6 +103,7 @@ export default function BookingsTab({ centerId }: Props) {
           <option value="confirmed">Confirmed</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
+          <option value="no_show">No Show</option>
         </select>
         {(dateFilter || statusFilter) && (
           <button
@@ -138,13 +153,22 @@ export default function BookingsTab({ centerId }: Props) {
                   ₹{Number(b.price_paid).toLocaleString('en-IN')}
                 </span>
                 {b.status === 'confirmed' && (
-                  <button
-                    onClick={() => handleComplete(b.id)}
-                    disabled={completingId === b.id}
-                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
-                  >
-                    {completingId === b.id ? 'Marking…' : 'Mark Complete'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleNoShow(b.id)}
+                      disabled={noShowId === b.id}
+                      className="text-xs border border-red-200 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+                    >
+                      {noShowId === b.id ? 'Marking…' : 'No Show'}
+                    </button>
+                    <button
+                      onClick={() => handleComplete(b.id)}
+                      disabled={completingId === b.id}
+                      className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+                    >
+                      {completingId === b.id ? 'Marking…' : 'Mark Complete'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

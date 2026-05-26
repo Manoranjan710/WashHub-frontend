@@ -10,7 +10,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface MyBooking {
   id: string;
-  status: 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  status: 'pending_payment' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   price_paid: number;
   created_at: string;
   center:  { id: string; name: string; address: string };
@@ -26,6 +26,7 @@ interface Slot {
   capacity: number;
   booked_count: number;
   is_available: boolean;
+  is_past?: boolean;
 }
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
@@ -43,6 +44,7 @@ function formatTime(iso: string) {
 }
 
 const STATUS_STYLE: Record<MyBooking['status'], string> = {
+  pending_payment: 'bg-amber-100 text-amber-700',
   confirmed: 'bg-aqua-100 text-aqua-700',
   completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-500',
@@ -216,6 +218,23 @@ function BookingCard({
         </span>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {booking.status === 'pending_payment' && (
+            <>
+              <Link
+                href={`/payment/${booking.id}`}
+                className="text-sm bg-deepsea-600 hover:bg-deepsea-700 text-white px-3 py-2 rounded-lg transition-colors"
+              >
+                Complete Payment
+              </Link>
+              <button
+                onClick={onCancelClick}
+                className="text-sm border border-red-200 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+
           {booking.status === 'confirmed' && (
             <>
               <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent, CSSProperties } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FixedSizeList } from 'react-window';
 import { api } from '@/lib/axios';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -16,6 +17,7 @@ interface Slot {
   booked_count: number;
   available_spots: number;
   is_available: boolean;
+  is_past?: boolean;
 }
 
 interface Vehicle {
@@ -26,24 +28,15 @@ interface Vehicle {
   color?: string | null;
 }
 
-interface BookingResult {
-  id: string;
-  price_paid: number;
-  center: { name: string; address: string };
-  service: { name: string; duration_mins: number };
-  slot: { date: string; start_time: string };
-  vehicle: { make: string; model: string; plate_number: string };
-}
+type BookingStep = 'date' | 'slot' | 'vehicle' | 'confirm';
 
-type BookingStep = 'date' | 'slot' | 'vehicle' | 'confirm' | 'done';
-
-const STEP_LABELS: Record<Exclude<BookingStep, 'done'>, string> = {
+const STEP_LABELS: Record<BookingStep, string> = {
   date:    'Date',
   slot:    'Time Slot',
   vehicle: 'Vehicle',
   confirm: 'Confirm',
 };
-const STEP_ORDER: Exclude<BookingStep, 'done'>[] = ['date', 'slot', 'vehicle', 'confirm'];
+const STEP_ORDER: BookingStep[] = ['date', 'slot', 'vehicle', 'confirm'];
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 
@@ -65,6 +58,7 @@ interface Props { centerId: string; serviceId: string }
 
 export default function BookingFlow({ centerId, serviceId }: Props) {
   const { isReady } = useAuthGuard('customer');
+  const router = useRouter();
 
   // Remote data
   const [center, setCenter]     = useState<CenterDetail | null>(null);
@@ -81,7 +75,6 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [submitting, setSubmitting]       = useState(false);
   const [bookingErr, setBookingErr]       = useState<string | null>(null);
-  const [result, setResult]               = useState<BookingResult | null>(null);
 
   // Inline add-vehicle form
   const [showAddVehicle, setShowAddVehicle] = useState(false);
@@ -148,12 +141,10 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
         slot_id:    selectedSlot.id,
         vehicle_id: selectedVehicle.id,
       });
-      setResult(data.data);
-      setStep('done');
+      router.push(`/payment/${data.data.id}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setBookingErr(msg ?? 'Booking failed. Please try again.');
-    } finally {
       setSubmitting(false);
     }
   }
@@ -177,8 +168,6 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
       </ErrorScreen>
     );
   }
-
-  if (step === 'done' && result) return <SuccessScreen result={result} />;
 
   /* ── Layout ─────────────────────────────────────────────────────────── */
 
@@ -375,11 +364,14 @@ function VirtualSlotPicker({
               }`}
           >
             {formatTime(slot.start_time)}
-            {slot.is_available && (
-              <span className={`block text-xs mt-0.5 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                {slot.available_spots} left
-              </span>
-            )}
+            <span className={`block text-xs mt-0.5 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+              {slot.is_past
+                ? 'Past'
+                : slot.is_available
+                  ? `${slot.available_spots} left`
+                  : 'Full'
+              }
+            </span>
           </button>
         );
       })}
@@ -399,7 +391,7 @@ function VirtualSlotPicker({
 }
 
 function StepIndicator({ current }: { current: BookingStep }) {
-  const idx = current === 'done' ? 4 : STEP_ORDER.indexOf(current as Exclude<BookingStep, 'done'>);
+  const idx = STEP_ORDER.indexOf(current);
   return (
     <div className="bg-white border-b border-gray-100">
       <div className="max-w-2xl mx-auto px-4 py-4">
@@ -476,42 +468,6 @@ function SummaryRow({ label, value, highlight }: { label: string; value: string;
     <div className="flex items-center justify-between px-4 py-3">
       <span className="text-sm text-gray-500">{label}</span>
       <span className={`text-sm font-medium ${highlight ? 'text-deepsea-600 text-base' : 'text-gray-800'}`}>{value}</span>
-    </div>
-  );
-}
-
-function SuccessScreen({ result }: { result: BookingResult }) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-deepsea-600 py-8 text-center">
-          <span className="text-4xl">&#10003;</span>
-          <h2 className="text-white text-xl font-bold mt-2">Booking Confirmed!</h2>
-          <p className="text-arctic-100/70 text-sm mt-1">Your car wash is scheduled</p>
-        </div>
-        <div className="divide-y divide-gray-100">
-          <SummaryRow label="Center"  value={result.center.name} />
-          <SummaryRow label="Service" value={result.service.name} />
-          <SummaryRow label="Date"    value={formatDate(result.slot.date)} />
-          <SummaryRow label="Time"    value={formatTime(result.slot.start_time)} />
-          <SummaryRow label="Vehicle" value={result.vehicle.plate_number} />
-          <SummaryRow label="Amount paid" value={`₹${Number(result.price_paid).toLocaleString('en-IN')}`} highlight />
-        </div>
-        <div className="p-5 flex flex-col gap-3">
-          <Link
-            href="/bookings/my"
-            className="block w-full text-center bg-aqua-500 hover:bg-aqua-600 text-white font-medium py-3 rounded-xl transition-colors"
-          >
-            View My Bookings
-          </Link>
-          <Link
-            href="/centers"
-            className="block w-full text-center border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium py-3 rounded-xl transition-colors text-sm"
-          >
-            Find Another Center
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
