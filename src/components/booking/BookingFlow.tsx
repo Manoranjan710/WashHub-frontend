@@ -100,17 +100,23 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
   const service: Service | undefined = center?.services.find(s => s.id === serviceId);
   const today = new Date().toISOString().slice(0, 10);
 
-  async function fetchSlots(d: string) {
-    setSlotsLoading(true);
-    setSlots([]);
-    setSelectedSlot(null);
+  async function fetchSlots(d: string, silent = false) {
+    if (!silent) { setSlotsLoading(true); setSlots([]); setSelectedSlot(null); }
     try {
       const { data } = await api.get(`/centers/${centerId}/slots`, { params: { date: d } });
       setSlots(data.data ?? []);
     } finally {
-      setSlotsLoading(false);
+      if (!silent) setSlotsLoading(false);
     }
   }
+
+  // Poll slot availability every 30s while on the slot step
+  useEffect(() => {
+    if (step !== 'slot' || !date) return;
+    const id = setInterval(() => fetchSlots(date, true), 30_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, date]);
 
   async function handleAddVehicle(e: FormEvent) {
     e.preventDefault();

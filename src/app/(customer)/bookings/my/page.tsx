@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/axios';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -10,14 +10,22 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface MyBooking {
   id: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   price_paid: number;
   created_at: string;
-  center:  { name: string; address: string };
+  center:  { id: string; name: string; address: string };
   service: { name: string; duration_mins: number };
   slot:    { date: string; start_time: string };
   vehicle: { make: string; model: string; plate_number: string };
   review:  { id: string; rating: number } | null;
+}
+
+interface Slot {
+  id: string;
+  start_time: string;
+  capacity: number;
+  booked_count: number;
+  is_available: boolean;
 }
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
@@ -35,9 +43,10 @@ function formatTime(iso: string) {
 }
 
 const STATUS_STYLE: Record<MyBooking['status'], string> = {
-  confirmed:  'bg-aqua-100 text-aqua-700',
-  completed:  'bg-green-100 text-green-700',
-  cancelled:  'bg-gray-100 text-gray-500',
+  confirmed: 'bg-aqua-100 text-aqua-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-gray-100 text-gray-500',
+  no_show:   'bg-red-100 text-red-600',
 };
 
 /* ─── Page ──────────────────────────────────────────────────────────────── */
@@ -50,6 +59,7 @@ export default function MyBookingsPage() {
   const [cancelId, setCancelId]       = useState<string | null>(null);
   const [cancelling, setCancelling]   = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/bookings/my')
@@ -78,6 +88,13 @@ export default function MyBookingsPage() {
     setReviewingId(null);
   }
 
+  function handleRescheduled(bookingId: string, newSlot: { date: string; start_time: string }) {
+    setBookings(prev =>
+      prev.map(b => b.id === bookingId ? { ...b, slot: newSlot } : b)
+    );
+    setReschedulingId(null);
+  }
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -101,11 +118,19 @@ export default function MyBookingsPage() {
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-deepsea-600 py-10">
-          <div className="max-w-3xl mx-auto px-4">
-            <h1 className="text-3xl font-bold text-white">My Bookings</h1>
-            <p className="text-arctic-100/70 text-sm mt-1">
-              {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'} total
-            </p>
+          <div className="max-w-3xl mx-auto px-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">My Bookings</h1>
+              <p className="text-arctic-100/70 text-sm mt-1">
+                {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'} total
+              </p>
+            </div>
+            <Link
+              href="/vehicles"
+              className="text-sm text-arctic-100/70 hover:text-white border border-white/20 px-4 py-2 rounded-lg transition-colors"
+            >
+              My Vehicles
+            </Link>
           </div>
         </div>
 
@@ -127,10 +152,14 @@ export default function MyBookingsPage() {
                   key={booking.id}
                   booking={booking}
                   isReviewing={reviewingId === booking.id}
+                  isRescheduling={reschedulingId === booking.id}
                   onCancelClick={() => setCancelId(booking.id)}
                   onReviewClick={() => setReviewingId(booking.id)}
                   onReviewCancel={() => setReviewingId(null)}
                   onReviewSubmitted={handleReviewSubmitted}
+                  onRescheduleClick={() => setReschedulingId(booking.id)}
+                  onRescheduleCancel={() => setReschedulingId(null)}
+                  onRescheduled={handleRescheduled}
                 />
               ))}
             </div>
@@ -144,15 +173,20 @@ export default function MyBookingsPage() {
 /* ─── BookingCard ───────────────────────────────────────────────────────── */
 
 function BookingCard({
-  booking, isReviewing,
+  booking, isReviewing, isRescheduling,
   onCancelClick, onReviewClick, onReviewCancel, onReviewSubmitted,
+  onRescheduleClick, onRescheduleCancel, onRescheduled,
 }: {
   booking: MyBooking;
   isReviewing: boolean;
+  isRescheduling: boolean;
   onCancelClick: () => void;
   onReviewClick: () => void;
   onReviewCancel: () => void;
   onReviewSubmitted: (id: string, review: { id: string; rating: number }) => void;
+  onRescheduleClick: () => void;
+  onRescheduleCancel: () => void;
+  onRescheduled: (id: string, slot: { date: string; start_time: string }) => void;
 }) {
   return (
     <article className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -163,7 +197,7 @@ function BookingCard({
           <p className="text-xs text-gray-400 mt-0.5">{booking.center.address}</p>
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLE[booking.status]}`}>
-          {booking.status}
+          {booking.status.replace('_', ' ')}
         </span>
       </div>
 
@@ -181,14 +215,22 @@ function BookingCard({
           ₹{Number(booking.price_paid).toLocaleString('en-IN')}
         </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {booking.status === 'confirmed' && (
-            <button
-              onClick={onCancelClick}
-              className="text-sm border border-red-200 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
+            <>
+              <button
+                onClick={onRescheduleClick}
+                className="text-sm border border-aqua-200 text-aqua-600 hover:bg-aqua-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                Reschedule
+              </button>
+              <button
+                onClick={onCancelClick}
+                className="text-sm border border-red-200 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </>
           )}
 
           {booking.status === 'completed' && !booking.review && !isReviewing && (
@@ -208,6 +250,16 @@ function BookingCard({
         </div>
       </div>
 
+      {/* Inline reschedule panel */}
+      {isRescheduling && (
+        <ReschedulePanel
+          bookingId={booking.id}
+          centerId={booking.center.id}
+          onCancel={onRescheduleCancel}
+          onRescheduled={(slot) => onRescheduled(booking.id, slot)}
+        />
+      )}
+
       {/* Inline review form */}
       {isReviewing && (
         <ReviewForm
@@ -226,6 +278,130 @@ function InfoCell({ label, value, sub }: { label: string; value: string; sub?: s
       <p className="text-xs text-gray-400 mb-0.5">{label}</p>
       <p className="text-gray-700 font-medium leading-snug">{value}</p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
+    </div>
+  );
+}
+
+/* ─── ReschedulePanel ───────────────────────────────────────────────────── */
+
+function ReschedulePanel({
+  bookingId, centerId, onCancel, onRescheduled,
+}: {
+  bookingId: string;
+  centerId: string;
+  onCancel: () => void;
+  onRescheduled: (slot: { date: string; start_time: string }) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate]             = useState('');
+  const [slots, setSlots]           = useState<Slot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  async function loadSlots(d: string) {
+    setSlotsLoading(true);
+    setSlots([]);
+    setSelectedSlot(null);
+    setError(null);
+    try {
+      const { data } = await api.get(`/centers/${centerId}/slots`, { params: { date: d } });
+      setSlots(data.data ?? []);
+    } catch {
+      setError('Failed to load slots. Try again.');
+    } finally {
+      setSlotsLoading(false);
+    }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedSlot) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data } = await api.patch(`/bookings/${bookingId}/reschedule`, {
+        new_slot_id: selectedSlot.id,
+      });
+      onRescheduled({
+        date:       data.data.slot.date,
+        start_time: data.data.slot.start_time,
+      });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Reschedule failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="border-t border-gray-100 px-5 py-5 bg-arctic-100/20 space-y-4">
+      <p className="text-sm font-semibold text-deepsea-600">Choose a new date &amp; time</p>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {/* Date picker */}
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <label className="text-xs text-gray-500 mb-1 block">New date</label>
+          <input
+            type="date"
+            min={today}
+            value={date}
+            onChange={e => { setDate(e.target.value); loadSlots(e.target.value); }}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-aqua-300"
+          />
+        </div>
+      </div>
+
+      {/* Slot grid */}
+      {date && (
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Available slots</p>
+          {slotsLoading ? (
+            <div className="flex justify-center py-4">
+              <span className="w-5 h-5 border-2 border-aqua-200 border-t-aqua-500 rounded-full animate-spin" />
+            </div>
+          ) : slots.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2">No available slots on this date.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {slots.filter(s => s.is_available).map(slot => (
+                <button
+                  key={slot.id}
+                  onClick={() => setSelectedSlot(slot)}
+                  className={`rounded-xl border py-2.5 text-xs font-medium transition-all
+                    ${selectedSlot?.id === slot.id
+                      ? 'border-aqua-500 bg-aqua-500 text-white'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-aqua-300'
+                    }`}
+                >
+                  {formatTime(slot.start_time)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={!selectedSlot || submitting}
+          className="flex-1 bg-aqua-500 hover:bg-aqua-600 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
+        >
+          {submitting ? 'Rescheduling…' : 'Confirm Reschedule'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -271,7 +447,6 @@ function ReviewForm({
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      {/* Star picker */}
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map(n => (
           <button
@@ -287,7 +462,6 @@ function ReviewForm({
         ))}
       </div>
 
-      {/* Comment */}
       <textarea
         value={comment}
         onChange={e => setComment(e.target.value)}

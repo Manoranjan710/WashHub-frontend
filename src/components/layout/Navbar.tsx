@@ -56,9 +56,14 @@ export default function Navbar() {
                 Find Centers
               </Link>
               {user?.role === 'customer' && (
-                <Link href="/bookings/my" className="hover:text-aqua-500 transition-colors">
-                  My Bookings
-                </Link>
+                <>
+                  <Link href="/bookings/my" className="hover:text-aqua-500 transition-colors">
+                    My Bookings
+                  </Link>
+                  <Link href="/vehicles" className="hover:text-aqua-500 transition-colors">
+                    My Vehicles
+                  </Link>
+                </>
               )}
               {user?.role === 'vendor' && (
                 <Link href="/vendor/dashboard" className="hover:text-aqua-500 transition-colors">
