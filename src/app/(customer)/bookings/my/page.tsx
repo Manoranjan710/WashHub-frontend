@@ -39,7 +39,7 @@ function formatDate(iso: string) {
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', {
-    hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
   });
 }
 
@@ -311,7 +311,7 @@ function ReschedulePanel({
   onCancel: () => void;
   onRescheduled: (slot: { date: string; start_time: string }) => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const [date, setDate]             = useState('');
   const [slots, setSlots]           = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);

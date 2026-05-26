@@ -5,7 +5,7 @@ import { api } from '@/lib/axios';
 
 interface Props { centerId: string }
 
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const defaultForm = {
   date_from:     today,

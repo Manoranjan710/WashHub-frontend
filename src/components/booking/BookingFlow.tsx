@@ -42,7 +42,7 @@ const STEP_ORDER: BookingStep[] = ['date', 'slot', 'vehicle', 'confirm'];
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', {
-    hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC',
+    hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
   });
 }
 
@@ -91,7 +91,7 @@ export default function BookingFlow({ centerId, serviceId }: Props) {
   }, [centerId, isReady]);
 
   const service: Service | undefined = center?.services.find(s => s.id === serviceId);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
   async function fetchSlots(d: string, silent = false) {
     if (!silent) { setSlotsLoading(true); setSlots([]); setSelectedSlot(null); }
