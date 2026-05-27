@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { ApiSuccess } from '@/types/api';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface VendorCenter {
   id: string;
@@ -31,9 +33,41 @@ const STATUS_COLORS: Record<string, string> = {
   suspended: 'bg-gray-100 text-gray-700',
 };
 
+type ActionType = 'approve' | 'reject' | 'suspend' | 'reactivate';
+
+interface PendingAction {
+  type: ActionType;
+  centerId: string;
+  centerName: string;
+}
+
+const ACTION_CONFIG: Record<ActionType, { title: string; message: (name: string) => string; confirmLabel: string }> = {
+  approve:    {
+    title:        'Approve Center?',
+    message:      (n) => `Approve "${n}"? It will go live and become visible to customers immediately.`,
+    confirmLabel: 'Yes, Approve',
+  },
+  reject:     {
+    title:        'Reject Center?',
+    message:      (n) => `Reject "${n}"? The vendor will be notified that their registration was not approved.`,
+    confirmLabel: 'Yes, Reject',
+  },
+  suspend:    {
+    title:        'Suspend Center?',
+    message:      (n) => `Suspend "${n}"? It will be hidden from customers immediately and all new bookings will be blocked.`,
+    confirmLabel: 'Yes, Suspend',
+  },
+  reactivate: {
+    title:        'Reactivate Center?',
+    message:      (n) => `Reactivate "${n}"? It will become visible to customers again.`,
+    confirmLabel: 'Yes, Reactivate',
+  },
+};
+
 export default function AdminDashboardPage() {
   const { user, isReady } = useAuthGuard('admin');
   const queryClient = useQueryClient();
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const { data: pending = [], isLoading: loadingPending } = useQuery({
     queryKey: ['admin', 'centers', 'pending'],
@@ -68,6 +102,15 @@ export default function AdminDashboardPage() {
     },
   });
 
+  function handleConfirm() {
+    if (!pendingAction) return;
+    const { type, centerId } = pendingAction;
+    setPendingAction(null);
+    if (type === 'approve' || type === 'reactivate') approveMutation.mutate(centerId);
+    else if (type === 'reject')                       rejectMutation.mutate(centerId);
+    else if (type === 'suspend')                      suspendMutation.mutate(centerId);
+  }
+
   if (!isReady) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -79,8 +122,20 @@ export default function AdminDashboardPage() {
   const active    = all.filter((c) => c.status === 'active').length;
   const suspended = all.filter((c) => c.status === 'suspended').length;
 
+  const cfg = pendingAction ? ACTION_CONFIG[pendingAction.type] : null;
+
   return (
     <div className="space-y-8">
+      <ConfirmDialog
+        open={!!pendingAction}
+        title={cfg?.title}
+        message={cfg ? cfg.message(pendingAction!.centerName) : ''}
+        confirmLabel={cfg?.confirmLabel}
+        cancelLabel="Cancel"
+        onConfirm={handleConfirm}
+        onCancel={() => setPendingAction(null)}
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -134,14 +189,14 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => approveMutation.mutate(center.id)}
+                    onClick={() => setPendingAction({ type: 'approve', centerId: center.id, centerName: center.name })}
                     disabled={approveMutation.isPending}
                     className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => rejectMutation.mutate(center.id)}
+                    onClick={() => setPendingAction({ type: 'reject', centerId: center.id, centerName: center.name })}
                     disabled={rejectMutation.isPending}
                     className="px-4 py-2 text-sm font-medium border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-60 transition-colors"
                   >
@@ -180,7 +235,7 @@ export default function AdminDashboardPage() {
                 </div>
                 {center.status === 'active' && (
                   <button
-                    onClick={() => suspendMutation.mutate(center.id)}
+                    onClick={() => setPendingAction({ type: 'suspend', centerId: center.id, centerName: center.name })}
                     disabled={suspendMutation.isPending}
                     className="shrink-0 px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-60 transition-colors"
                   >
@@ -189,7 +244,11 @@ export default function AdminDashboardPage() {
                 )}
                 {(center.status === 'rejected' || center.status === 'suspended') && (
                   <button
-                    onClick={() => approveMutation.mutate(center.id)}
+                    onClick={() => setPendingAction({
+                      type: center.status === 'suspended' ? 'reactivate' : 'approve',
+                      centerId: center.id,
+                      centerName: center.name,
+                    })}
                     disabled={approveMutation.isPending}
                     className="shrink-0 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors"
                   >
