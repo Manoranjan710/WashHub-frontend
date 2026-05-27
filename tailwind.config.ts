@@ -48,6 +48,15 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
+      keyframes: {
+        'toast-in': {
+          '0%':   { opacity: '0', transform: 'translateY(12px) scale(0.97)' },
+          '100%': { opacity: '1', transform: 'translateY(0)   scale(1)' },
+        },
+      },
+      animation: {
+        'toast-in': 'toast-in 0.22s ease-out forwards',
+      },
     },
   },
   plugins: [],

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/axios';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -12,6 +13,8 @@ interface MyBooking {
   id: string;
   status: 'pending_payment' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   price_paid: number;
+  payment_status: 'pending' | 'paid' | 'refunded' | 'failed';
+  refund_status: string | null;
   created_at: string;
   center:  { id: string; name: string; address: string };
   service: { name: string; duration_mins: number };
@@ -55,12 +58,13 @@ const STATUS_STYLE: Record<MyBooking['status'], string> = {
 
 export default function MyBookingsPage() {
   useAuthGuard('customer');
+  const { toastError } = useToast();
 
-  const [bookings, setBookings]       = useState<MyBooking[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [cancelId, setCancelId]       = useState<string | null>(null);
-  const [cancelling, setCancelling]   = useState(false);
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [bookings, setBookings]             = useState<MyBooking[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [cancelId, setCancelId]             = useState<string | null>(null);
+  const [cancelling, setCancelling]         = useState(false);
+  const [reviewingId, setReviewingId]       = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,9 +81,13 @@ export default function MyBookingsPage() {
       setBookings(prev =>
         prev.map(b => b.id === cancelId ? { ...b, status: 'cancelled' } : b)
       );
+      setCancelId(null);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toastError(msg ?? 'Failed to cancel booking.');
+      setCancelId(null);
     } finally {
       setCancelling(false);
-      setCancelId(null);
     }
   }
 
@@ -110,7 +118,7 @@ export default function MyBookingsPage() {
       <ConfirmDialog
         open={!!cancelId}
         title="Cancel booking?"
-        message="Are you sure you want to cancel this booking? This cannot be undone."
+        message="Are you sure you want to cancel this booking? If paid, a full refund will be issued automatically. This cannot be undone."
         confirmLabel={cancelling ? 'Cancelling…' : 'Yes, cancel'}
         cancelLabel="Keep booking"
         onConfirm={handleCancel}
@@ -190,6 +198,8 @@ function BookingCard({
   onRescheduleCancel: () => void;
   onRescheduled: (id: string, slot: { date: string; start_time: string }) => void;
 }) {
+  const refunded = booking.payment_status === 'refunded' && booking.refund_status === 'processed';
+
   return (
     <article className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Card header */}
@@ -198,9 +208,16 @@ function BookingCard({
           <h3 className="font-semibold text-gray-800">{booking.center.name}</h3>
           <p className="text-xs text-gray-400 mt-0.5">{booking.center.address}</p>
         </div>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLE[booking.status]}`}>
-          {booking.status.replace('_', ' ')}
-        </span>
+        <div className="flex items-center gap-2">
+          {refunded && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700">
+              Refunded
+            </span>
+          )}
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLE[booking.status]}`}>
+            {booking.status.replace('_', ' ')}
+          </span>
+        </div>
       </div>
 
       {/* Card body */}
@@ -311,24 +328,23 @@ function ReschedulePanel({
   onCancel: () => void;
   onRescheduled: (slot: { date: string; start_time: string }) => void;
 }) {
+  const { toastError } = useToast();
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-  const [date, setDate]             = useState('');
-  const [slots, setSlots]           = useState<Slot[]>([]);
+  const [date, setDate]                 = useState('');
+  const [slots, setSlots]               = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [submitting, setSubmitting]     = useState(false);
 
   async function loadSlots(d: string) {
     setSlotsLoading(true);
     setSlots([]);
     setSelectedSlot(null);
-    setError(null);
     try {
       const { data } = await api.get(`/centers/${centerId}/slots`, { params: { date: d } });
       setSlots(data.data ?? []);
     } catch {
-      setError('Failed to load slots. Try again.');
+      toastError('Failed to load slots. Try again.');
     } finally {
       setSlotsLoading(false);
     }
@@ -338,7 +354,6 @@ function ReschedulePanel({
     e.preventDefault();
     if (!selectedSlot) return;
     setSubmitting(true);
-    setError(null);
     try {
       const { data } = await api.patch(`/bookings/${bookingId}/reschedule`, {
         new_slot_id: selectedSlot.id,
@@ -349,7 +364,7 @@ function ReschedulePanel({
       });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Reschedule failed. Please try again.');
+      toastError(msg ?? 'Reschedule failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -358,8 +373,6 @@ function ReschedulePanel({
   return (
     <div className="border-t border-gray-100 px-5 py-5 bg-arctic-100/20 space-y-4">
       <p className="text-sm font-semibold text-deepsea-600">Choose a new date &amp; time</p>
-
-      {error && <p className="text-xs text-red-600">{error}</p>}
 
       {/* Date picker */}
       <div className="flex gap-3 items-end">
@@ -434,16 +447,15 @@ function ReviewForm({
   onCancel: () => void;
   onSubmitted: (review: { id: string; rating: number }) => void;
 }) {
-  const [rating, setRating]     = useState(0);
-  const [hovered, setHovered]   = useState(0);
-  const [comment, setComment]   = useState('');
+  const { toastError } = useToast();
+  const [rating, setRating]         = useState(0);
+  const [hovered, setHovered]       = useState(0);
+  const [comment, setComment]       = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
 
   async function handleSubmit() {
-    if (rating === 0) { setError('Please select a star rating.'); return; }
+    if (rating === 0) { toastError('Please select a star rating.'); return; }
     setSubmitting(true);
-    setError(null);
     try {
       const { data } = await api.post(`/bookings/${bookingId}/review`, {
         rating,
@@ -452,7 +464,7 @@ function ReviewForm({
       onSubmitted({ id: data.data.id, rating: data.data.rating });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Failed to submit review. Try again.');
+      toastError(msg ?? 'Failed to submit review. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -463,8 +475,6 @@ function ReviewForm({
   return (
     <div className="border-t border-gray-100 px-5 py-4 bg-arctic-100/30 space-y-3">
       <p className="text-sm font-semibold text-deepsea-600">Rate your experience</p>
-
-      {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map(n => (

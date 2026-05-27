@@ -9,7 +9,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 export default function ConfirmDialog({
@@ -24,7 +24,7 @@ export default function ConfirmDialog({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') onCancel?.();
     };
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
@@ -46,7 +46,7 @@ export default function ConfirmDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-deepsea-900/40 backdrop-blur-sm animate-dialog-fade"
-        onClick={onCancel}
+        onClick={onCancel ?? undefined}
       />
 
       {/* Card */}
@@ -72,17 +72,20 @@ export default function ConfirmDialog({
         <p className="mt-2 text-sm text-gray-500">{message}</p>
 
         <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            autoFocus
-            className="flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            {cancelLabel}
-          </button>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              autoFocus
+              className="flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}
+            autoFocus={!onCancel}
             className="flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg bg-aqua-500 text-white hover:bg-aqua-600 transition-colors"
           >
             {confirmLabel}

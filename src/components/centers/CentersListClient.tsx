@@ -29,12 +29,17 @@ async function fetchCenters(
 
 export default function CentersListClient({ initialData }: Props) {
   const [coords, setCoords]         = useState<{ lat: number; lng: number } | null>(null);
-  const [radius, setRadius]         = useState(10);
+  const [radius, setRadius]         = useState(2);
   const [geoError, setGeoError]     = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [textFilter, setTextFilter] = useState('');
   const [sort, setSort]             = useState<'rating' | 'distance'>('rating');
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Only hydrate with SSR data for the initial no-geo, default-radius query.
+  // For any geo query the initialData would be unfiltered SSR data which would
+  // appear fresh (staleTime) and never trigger a refetch — showing wrong results.
+  const isDefaultQuery = coords === null && radius === 2;
 
   const {
     data,
@@ -47,11 +52,10 @@ export default function CentersListClient({ initialData }: Props) {
     queryFn:   ({ pageParam }) => fetchCenters(pageParam as number, coords, radius),
     getNextPageParam: (last) => last.hasMore ? last.page + 1 : undefined,
     initialPageParam: 1,
-    initialData: {
-      pages:      [initialData],
-      pageParams: [1],
-    },
-    staleTime: 5 * 60 * 1000, // matches the 5-min Redis TTL on the backend
+    ...(isDefaultQuery
+      ? { initialData: { pages: [initialData], pageParams: [1] }, staleTime: 5 * 60 * 1000 }
+      : { staleTime: 0 }
+    ),
   });
 
   // Flatten all pages, apply text filter + sort with useMemo
@@ -154,7 +158,7 @@ export default function CentersListClient({ initialData }: Props) {
             title={!geoActive ? 'Enable location first to filter by radius' : undefined}
             className="px-3 py-2 text-sm text-deepsea-600 bg-transparent focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed border-r border-aqua-300"
           >
-            {[5, 10, 20, 50].map(r => (
+            {[2, 5, 7, 10].map(r => (
               <option key={r} value={r}>Within {r} km</option>
             ))}
           </select>

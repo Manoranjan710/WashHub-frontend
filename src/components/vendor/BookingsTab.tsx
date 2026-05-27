@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/axios';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface VendorBooking {
   id: string;
@@ -43,6 +44,13 @@ export default function BookingsTab({ centerId }: Props) {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [noShowId,     setNoShowId]     = useState<string | null>(null);
 
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'complete' | 'noshow';
+    bookingId: string;
+    customerName: string;
+  } | null>(null);
+
   const fetchBookings = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,32 +67,51 @@ export default function BookingsTab({ centerId }: Props) {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  async function handleComplete(bookingId: string) {
-    setCompletingId(bookingId);
-    try {
-      await api.patch(`/bookings/${bookingId}/complete`);
-      setBookings(prev =>
-        prev.map(b => b.id === bookingId ? { ...b, status: 'completed' } : b)
-      );
-    } finally {
-      setCompletingId(null);
+  async function handleConfirmAction() {
+    if (!confirmAction) return;
+    const { type, bookingId } = confirmAction;
+    setConfirmAction(null);
+
+    if (type === 'complete') {
+      setCompletingId(bookingId);
+      try {
+        await api.patch(`/bookings/${bookingId}/complete`);
+        setBookings(prev =>
+          prev.map(b => b.id === bookingId ? { ...b, status: 'completed' } : b)
+        );
+      } finally {
+        setCompletingId(null);
+      }
+    } else {
+      setNoShowId(bookingId);
+      try {
+        await api.patch(`/bookings/${bookingId}/noshow`);
+        setBookings(prev =>
+          prev.map(b => b.id === bookingId ? { ...b, status: 'no_show' } : b)
+        );
+      } finally {
+        setNoShowId(null);
+      }
     }
   }
 
-  async function handleNoShow(bookingId: string) {
-    setNoShowId(bookingId);
-    try {
-      await api.patch(`/bookings/${bookingId}/noshow`);
-      setBookings(prev =>
-        prev.map(b => b.id === bookingId ? { ...b, status: 'no_show' } : b)
-      );
-    } finally {
-      setNoShowId(null);
-    }
-  }
+  const isComplete = confirmAction?.type === 'complete';
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={!!confirmAction}
+        title={isComplete ? 'Mark as Completed?' : 'Mark as No Show?'}
+        message={
+          isComplete
+            ? `Confirm that ${confirmAction?.customerName}'s booking has been completed. This action cannot be undone.`
+            : `Mark ${confirmAction?.customerName} as a no-show? This action cannot be undone.`
+        }
+        confirmLabel={isComplete ? 'Yes, Mark Complete' : 'Yes, Mark No Show'}
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmAction(null)}
+      />
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <input
@@ -155,14 +182,14 @@ export default function BookingsTab({ centerId }: Props) {
                 {b.status === 'confirmed' && (
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleNoShow(b.id)}
+                      onClick={() => setConfirmAction({ type: 'noshow', bookingId: b.id, customerName: b.customer.name })}
                       disabled={noShowId === b.id}
                       className="text-xs border border-red-200 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
                     >
                       {noShowId === b.id ? 'Marking…' : 'No Show'}
                     </button>
                     <button
-                      onClick={() => handleComplete(b.id)}
+                      onClick={() => setConfirmAction({ type: 'complete', bookingId: b.id, customerName: b.customer.name })}
                       disabled={completingId === b.id}
                       className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
                     >
