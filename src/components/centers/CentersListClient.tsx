@@ -127,30 +127,30 @@ export default function CentersListClient({ initialData }: Props) {
   const geoActive = coords !== null;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-[60vh]">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-8">
+      <div className="bg-white rounded-2xl border border-aqua-100/60 shadow-[0_2px_16px_rgba(0,95,115,0.07)] px-5 py-4 mb-8 flex flex-wrap items-center gap-3">
         {/* Text search */}
         <input
           type="search"
           placeholder="Search centers…"
           value={textFilter}
           onChange={handleTextChange}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-aqua-300 w-48"
+          className="border border-aqua-100 rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-aqua-300 focus:border-aqua-300 transition-shadow w-48"
         />
 
         {/* Sort */}
         <select
           value={sort}
           onChange={e => setSort(e.target.value as 'rating' | 'distance')}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-deepsea-600 bg-white focus:outline-none focus:ring-2 focus:ring-aqua-300"
+          className="border border-aqua-100 rounded-lg px-3 py-2 text-sm text-deepsea-600 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-aqua-300"
         >
           <option value="rating">Sort: Top rated</option>
           <option value="distance" disabled={!geoActive}>Sort: Nearest first</option>
         </select>
 
         {/* Radius + geo button grouped */}
-        <div className="flex items-center rounded-lg border border-aqua-300 overflow-hidden bg-white">
+        <div className="flex items-center rounded-lg border border-aqua-300 overflow-hidden bg-white shadow-sm">
           <select
             value={radius}
             onChange={e => handleRadiusChange(Number(e.target.value))}
@@ -166,7 +166,7 @@ export default function CentersListClient({ initialData }: Props) {
           <button
             onClick={handleGeoSearch}
             disabled={geoLoading}
-            className="flex items-center gap-2 bg-aqua-500 hover:bg-aqua-600 disabled:opacity-60 text-white px-4 py-2 text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-aqua-500 hover:bg-aqua-600 active:bg-aqua-700 disabled:opacity-60 text-white px-4 py-2 text-sm font-medium transition-colors"
           >
             {geoLoading
               ? <><span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Searching…</>
@@ -187,7 +187,8 @@ export default function CentersListClient({ initialData }: Props) {
       )}
 
       {geoActive && (
-        <p className="text-sm text-deepsea-600 font-medium mb-6">
+        <p className="text-sm text-deepsea-600 font-medium mb-6 flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-aqua-500 shadow-[0_0_0_3px_rgba(0,180,204,0.2)]" />
           {displayed.length} {displayed.length === 1 ? 'center' : 'centers'} within {radius} km of your location
         </p>
       )}

@@ -24,6 +24,12 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .centers-bg {
+    background-color: #fff;
+    background-image: radial-gradient(circle, rgba(0, 95, 115, 0.12) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+  }
 }
 
 @keyframes dialog-fade {

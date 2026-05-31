@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -8,8 +9,12 @@ export default function HomePage() {
       <Navbar />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-aqua-500 to-deepsea-600 text-white py-20 px-4">
-          <div className="max-w-4xl mx-auto text-center">
+        <section
+          className="relative text-white py-20 px-4 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg_hero.jpg')" }}
+        >
+          <div className="absolute inset-0 bg-deepsea-600/70" />
+          <div className="max-w-4xl mx-auto text-center relative z-10">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
               Find & Book Car Washes<br />Near You
             </h1>

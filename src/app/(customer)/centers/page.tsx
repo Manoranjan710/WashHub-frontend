@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import CentersListClient from '@/components/centers/CentersListClient';
 
 // SSR: listing is personalised by geo + pagination; no caching at the page level.
@@ -28,15 +29,26 @@ export default async function CentersPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-deepsea-600 py-20 text-center">
-        <h1 className="text-4xl font-bold text-white tracking-tight">Find a Car Wash Near You</h1>
-        <p className="mt-3 text-arctic-100/80 text-lg max-w-xl mx-auto px-4">
-          Browse top-rated centers or share your location to see the nearest ones sorted by distance.
-        </p>
+      <section
+        className="relative pt-24 pb-20 text-center bg-cover bg-center"
+        style={{ backgroundImage: "url('/car_wash.jpg')" }}
+      >
+        {/* Dark teal overlay for text legibility */}
+        <div className="absolute inset-0 bg-deepsea-600/70" />
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">
+            Find a Car Wash Near You
+          </h1>
+          <p className="mt-3 text-arctic-100/90 text-lg max-w-xl mx-auto px-4">
+            Browse top-rated centers or share your location to see the nearest ones sorted by distance.
+          </p>
+        </div>
       </section>
 
       {/* Listing with client-side geo-search */}
-      <CentersListClient initialData={initialData} />
+      <div className="centers-bg">
+        <CentersListClient initialData={initialData} />
+      </div>
     </>
   );
 }
