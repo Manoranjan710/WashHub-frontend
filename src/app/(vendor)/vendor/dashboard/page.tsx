@@ -136,12 +136,12 @@ export default function VendorDashboardPage() {
             {/* Tabs — only for active centers */}
             {isActive ? (
               <>
-                <div className="flex border-b border-gray-100">
+                <div className="flex border-b border-gray-100 overflow-x-auto">
                   {TABS.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setTab(center.id, tab.id)}
-                      className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors
+                      className={`shrink-0 px-5 py-3 text-sm font-medium border-b-2 transition-colors
                         ${activeTab === tab.id
                           ? 'border-aqua-500 text-aqua-600'
                           : 'border-transparent text-gray-400 hover:text-gray-600'}`}

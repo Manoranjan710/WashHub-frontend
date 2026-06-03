@@ -59,6 +59,8 @@ export default function CentersListClient({ initialData }: Props) {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isError,
+    refetch,
   } = useInfiniteQuery<PageData>({
     queryKey:  ['centers', coords, radius],
     queryFn:   ({ pageParam }) => fetchCenters(pageParam as number, coords, radius),
@@ -296,8 +298,18 @@ export default function CentersListClient({ initialData }: Props) {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <span className="w-8 h-8 border-4 border-aqua-200 border-t-aqua-500 rounded-full animate-spin inline-block" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }, (_, i) => <CenterCardSkeleton key={i} />)}
+        </div>
+      ) : isError ? (
+        <div className="text-center py-20">
+          <p className="text-gray-500 text-lg">Failed to load centers.</p>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 text-sm text-aqua-600 underline underline-offset-2 hover:text-aqua-700"
+          >
+            Try again
+          </button>
         </div>
       ) : displayed.length === 0 ? (
         <div className="text-center py-20">
@@ -327,6 +339,22 @@ export default function CentersListClient({ initialData }: Props) {
         )}
       </div>
     </section>
+  );
+}
+
+function CenterCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-aqua-100/70 overflow-hidden animate-pulse">
+      <div className="bg-gray-200 h-24 rounded-t-2xl" />
+      <div className="px-5 py-4 space-y-3">
+        <div className="h-3 bg-gray-100 rounded-full w-3/4" />
+        <div className="h-3 bg-gray-100 rounded-full w-1/2" />
+        <div className="h-3 bg-gray-100 rounded-full w-2/3" />
+      </div>
+      <div className="px-5 pb-5">
+        <div className="h-10 bg-gray-100 rounded-xl" />
+      </div>
+    </div>
   );
 }
 
