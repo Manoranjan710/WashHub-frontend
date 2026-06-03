@@ -29,7 +29,7 @@ async function getCenter(id: string): Promise<CenterDetail | null> {
 async function getCenterReviews(id: string) {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/centers/${id}/reviews?page=1`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     if (!res.ok) return { reviews: [], total: 0, pages: 0 };
     const json = await res.json();
@@ -57,6 +57,11 @@ export default async function CenterDetailPage({ params }: { params: { id: strin
   ]);
   if (!center) notFound();
 
+  // Use reviewsData.total for all review count displays — it is fetched with
+  // cache: 'no-store' so it always reflects the live DB value, whereas
+  // center.total_reviews may come from the ISR-cached getCenter response.
+  const totalReviews = reviewsData.total;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
@@ -78,7 +83,7 @@ export default async function CenterDetailPage({ params }: { params: { id: strin
             <StarRow rating={center.avg_rating} />
             <span className="text-white font-semibold">{Number(center.avg_rating).toFixed(1)}</span>
             <span className="text-arctic-100/60 text-sm">
-              ({center.total_reviews} {center.total_reviews === 1 ? 'review' : 'reviews'})
+              ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
             </span>
           </div>
         </div>
@@ -102,7 +107,7 @@ export default async function CenterDetailPage({ params }: { params: { id: strin
         <section>
           <div className="flex items-baseline gap-3 mb-5">
             <h2 className="text-xl font-semibold text-deepsea-600">Customer Reviews</h2>
-            <span className="text-sm text-gray-400">{center.total_reviews} total</span>
+            <span className="text-sm text-gray-400">{totalReviews} total</span>
           </div>
           <CenterReviews centerId={center.id} initialData={reviewsData} />
         </section>
