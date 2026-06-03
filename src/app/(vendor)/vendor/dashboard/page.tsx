@@ -12,16 +12,18 @@ import SlotsTab from '@/components/vendor/SlotsTab';
 import BookingsTab from '@/components/vendor/BookingsTab';
 import ReviewsTab from '@/components/vendor/ReviewsTab';
 import AnalyticsTab from '@/components/vendor/AnalyticsTab';
+import AIInsightsTab from '@/components/vendor/AIInsightsTab';
 
 type CenterWithServices = Center & { services: Service[] };
-type TabId = 'services' | 'slots' | 'bookings' | 'reviews' | 'analytics';
+type TabId = 'services' | 'slots' | 'bookings' | 'reviews' | 'analytics' | 'ai-insights';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'services',  label: 'Services'  },
-  { id: 'slots',     label: 'Slots'     },
-  { id: 'bookings',  label: 'Bookings'  },
-  { id: 'reviews',   label: 'Reviews'   },
-  { id: 'analytics', label: 'Analytics' },
+  { id: 'services',    label: 'Services'    },
+  { id: 'slots',       label: 'Slots'       },
+  { id: 'bookings',    label: 'Bookings'    },
+  { id: 'reviews',     label: 'Reviews'     },
+  { id: 'analytics',   label: 'Analytics'   },
+  { id: 'ai-insights', label: '✦ AI Insights' },
 ];
 
 const STATUS_STYLES: Record<string, { badge: string; label: string; hint: string }> = {
@@ -168,6 +170,9 @@ export default function VendorDashboardPage() {
                   )}
                   {activeTab === 'analytics' && (
                     <AnalyticsTab centerId={center.id} />
+                  )}
+                  {activeTab === 'ai-insights' && (
+                    <AIInsightsTab centerId={center.id} />
                   )}
                 </div>
               </>
