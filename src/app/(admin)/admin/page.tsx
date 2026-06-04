@@ -86,6 +86,14 @@ function formatChartDate(dateStr: string): string {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+const TOOLTIP_STYLE = {
+  fontSize:     12,
+  borderRadius: 10,
+  border:       '1px solid #e5e7eb',
+  boxShadow:    '0 4px 20px rgba(0,0,0,0.10)',
+  padding:      '8px 12px',
+};
+
 /* ── Component ──────────────────────────────────────────────────────────────── */
 
 type Tab = 'centers' | 'analytics';
@@ -344,44 +352,50 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Bookings per day chart */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="font-semibold text-gray-900 mb-6">Bookings — Last 30 Days</h2>
                 {analytics.bookingsPerDay.length === 0 ? (
                   <p className="text-sm text-gray-400 py-10 text-center">No booking data for the last 30 days.</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
-                    <AreaChart data={analytics.bookingsPerDay} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                    <AreaChart data={analytics.bookingsPerDay} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="bookingGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%"  stopColor="#0ea5c8" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#0ea5c8" stopOpacity={0}    />
+                          <stop offset="0%"   stopColor="#0ea5c8" stopOpacity={0.40} />
+                          <stop offset="75%"  stopColor="#0ea5c8" stopOpacity={0.08} />
+                          <stop offset="100%" stopColor="#0ea5c8" stopOpacity={0}    />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <CartesianGrid vertical={false} stroke="#f3f4f6" />
                       <XAxis
                         dataKey="date"
                         tickFormatter={formatChartDate}
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: '#9ca3af' }}
+                        axisLine={false}
+                        tickLine={false}
                         interval="preserveStartEnd"
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: '#9ca3af' }}
                         allowDecimals={false}
                         width={32}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <Tooltip
                         labelFormatter={(v) => formatChartDate(String(v))}
                         formatter={(v) => [v, 'Bookings']}
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                        contentStyle={TOOLTIP_STYLE}
+                        cursor={{ stroke: '#0ea5c8', strokeWidth: 1, strokeDasharray: '5 4' }}
                       />
                       <Area
                         type="monotone"
                         dataKey="count"
                         stroke="#0ea5c8"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         fill="url(#bookingGrad)"
                         dot={false}
-                        activeDot={{ r: 4 }}
+                        activeDot={{ r: 5, fill: '#0ea5c8', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
