@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import CentersListClient from '@/components/centers/CentersListClient';
 
 // SSR: listing is personalised by geo + pagination; no caching at the page level.

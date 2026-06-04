@@ -41,7 +41,7 @@ async function fetchMyCenters(): Promise<CenterWithServices[]> {
 export default function VendorDashboardPage() {
   const { user, isReady } = useAuthGuard('vendor');
 
-  const { data: centers = [], isLoading, refetch } = useQuery({
+  const { data: centers = [], isLoading } = useQuery({
     queryKey: ['vendor', 'centers'],
     queryFn: fetchMyCenters,
     enabled: isReady,
