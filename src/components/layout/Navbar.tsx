@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,8 +52,8 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2" onClick={closeMobile}>
-              <span className="text-2xl font-bold text-aqua-500">WashHub</span>
+            <Link href="/" className="flex items-center" onClick={closeMobile}>
+              <Image src="/washhub_logo.jpg" alt="WashHub" width={110} height={36} className="object-contain" />
             </Link>
 
             {/* Desktop nav links */}

@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/axios';
 import { useAuthStore } from '@/store/authStore';
 import { AuthResponse } from '@/types/auth';
@@ -57,81 +58,106 @@ function LoginContent() {
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-aqua-500">WashHub</Link>
-          <h1 className="mt-4 text-xl font-semibold text-gray-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-aqua-500 font-medium hover:underline">Sign up</Link>
-          </p>
-        </div>
+    <div className="flex h-screen w-screen overflow-hidden">
+      {/* Left panel — hero image */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <Image
+          src="/washhub_login_page_bg.jpg"
+          alt="Car wash service"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+      </div>
 
-        {/* Google OAuth */}
-        <a
-          href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
-          className="flex items-center justify-center gap-3 w-full border border-gray-300 rounded-lg py-2.5 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6"
-        >
-          <GoogleIcon />
-          Continue with Google
-        </a>
+      {/* Right panel — login form */}
+      <div className="flex flex-col items-center justify-center w-full lg:w-1/2 bg-gray-50 px-6 py-10">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <div className="mb-8 text-center">
+              <Link href="/" className="inline-block">
+                <Image
+                  src="/washhub_logo.jpg"
+                  alt="WashHub"
+                  width={130}
+                  height={44}
+                  className="mx-auto object-contain"
+                />
+              </Link>
+              <h1 className="mt-4 text-xl font-semibold text-gray-900">Welcome back</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Don&apos;t have an account?{' '}
+                <Link href="/register" className="text-aqua-500 font-medium hover:underline">Sign up</Link>
+              </p>
+            </div>
 
-        <div className="relative mb-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
+            {/* Google OAuth */}
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
+              className="flex items-center justify-center gap-3 w-full border border-gray-300 shadow-md rounded-lg py-2.5 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </a>
+
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs text-gray-400 bg-white px-2">
+                or sign in with email
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Your password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full shadow-md py-2.5 px-4 bg-aqua-500 text-white text-sm font-semibold rounded-lg hover:bg-aqua-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+            </form>
+
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 text-center">
+              Admin? Use your seeded credentials.
+            </div>
           </div>
-          <div className="relative flex justify-center text-xs text-gray-400 bg-white px-2">
-            or sign in with email
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              name="email"
-              type="email"
-              required
-              value={form.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              name="password"
-              type="password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Your password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aqua-400 focus:border-transparent"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-aqua-500 text-white text-sm font-semibold rounded-lg hover:bg-aqua-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 text-center">
-          Admin? Use your seeded credentials.
         </div>
       </div>
+
     </div>
   );
 }
