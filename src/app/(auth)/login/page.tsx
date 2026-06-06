@@ -45,7 +45,13 @@ function LoginContent() {
       setToken(data.data.accessToken);
 
       const role = data.data.user.role;
-      const redirect = role === 'admin' ? '/admin' : role === 'vendor' ? '/vendor/dashboard' : '/';
+      // Honour a ?redirect= target for customers (e.g. a center they tried to
+      // book before logging in); admins/vendors always go to their dashboards.
+      const redirectParam = searchParams.get('redirect');
+      const redirect =
+        role === 'admin'  ? '/admin' :
+        role === 'vendor' ? '/vendor/dashboard' :
+        redirectParam || '/';
       router.push(redirect);
     } catch (err: unknown) {
       const msg =

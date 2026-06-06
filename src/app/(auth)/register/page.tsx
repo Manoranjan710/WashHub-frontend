@@ -88,8 +88,8 @@ function RegisterContent() {
       </div>
 
       {/* Right panel — register form */}
-      <div className="flex flex-col items-center justify-center w-full lg:w-1/2 bg-gray-50 px-6 pt-[10rem] overflow-y-auto">
-        <div className="w-full max-w-md my-4">
+      <div className="flex flex-col items-center w-full lg:w-1/2 bg-gray-50 px-4 py-4 overflow-y-auto">
+        <div className="w-full max-w-md my-auto py-6">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <div className="mb-6 text-center">
               <Link href="/" className="inline-block">

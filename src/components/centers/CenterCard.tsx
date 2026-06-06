@@ -1,6 +1,9 @@
+'use client';
+
 import { memo } from 'react';
 import Link from 'next/link';
 import { CenterSearchResult } from '@/types/center';
+import { useAuthStore } from '@/store/authStore';
 
 function StarRating({ rating }: { rating: number }) {
   const rounded = Math.round(rating);
@@ -14,6 +17,14 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 const CenterCard = memo(function CenterCard({ center }: { center: CenterSearchResult }) {
+  const user = useAuthStore((s) => s.user);
+
+  // Logged-out visitors can browse the list, but "View & Book" routes them to
+  // login first (with a redirect back to the center they picked).
+  const href = user
+    ? `/centers/${center.id}`
+    : `/login?redirect=/centers/${center.id}`;
+
   return (
     <article className="bg-white rounded-2xl border border-aqua-100/70 shadow-[0_4px_20px_rgba(0,95,115,0.09)] hover:shadow-[0_10px_36px_rgba(0,95,115,0.17)] hover:-translate-y-1 transition-all duration-200 flex flex-col">
       {/* Card header */}
@@ -52,7 +63,7 @@ const CenterCard = memo(function CenterCard({ center }: { center: CenterSearchRe
       {/* Card footer */}
       <div className="px-5 pb-5">
         <Link
-          href={`/centers/${center.id}`}
+          href={href}
           className="block w-full text-center bg-aqua-500 hover:bg-aqua-600 active:scale-[0.98] text-white font-medium py-2.5 rounded-xl shadow-md hover:shadow-md transition-all duration-150 text-sm"
         >
           View &amp; Book
