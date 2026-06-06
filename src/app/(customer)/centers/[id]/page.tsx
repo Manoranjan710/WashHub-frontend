@@ -144,7 +144,7 @@ function ServicesSection({ centerId, services }: { centerId: string; services: S
               )}
 
               <div className="flex items-center justify-between mt-auto pt-1">
-                <span className="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
+                <span className="text-xs text-gray-700 bg-gray-200 border border-gray-100 rounded-full px-3 py-1">
                   {svc.duration_mins} min
                 </span>
                 <Link

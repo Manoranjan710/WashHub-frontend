@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-5 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
               activeTab === tab
-                ? 'bg-white text-deepsea-700 shadow-sm'
+                ? 'bg-white text-deepsea-700 shadow-md'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
               { label: 'Active',         value: active,         color: 'text-green-600'   },
               { label: 'Suspended',      value: suspended,      color: 'text-gray-500'    },
             ].map(stat => (
-              <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-5">
+              <div key={stat.label} className="bg-white rounded-xl border border-gray-200 shadow-md p-5">
                 <p className="text-sm text-gray-500">{stat.label}</p>
                 <p className={`text-3xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
               </div>
@@ -352,7 +352,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Bookings per day chart */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
                 <h2 className="font-semibold text-gray-900 mb-6">Bookings — Last 30 Days</h2>
                 {analytics.bookingsPerDay.length === 0 ? (
                   <p className="text-sm text-gray-400 py-10 text-center">No booking data for the last 30 days.</p>
@@ -417,7 +417,7 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white shadow-md rounded-xl border border-gray-200 p-5">
       <p className="text-sm text-gray-500">{label}</p>
       <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
       <p className="text-xs text-gray-400 mt-1">{sub}</p>

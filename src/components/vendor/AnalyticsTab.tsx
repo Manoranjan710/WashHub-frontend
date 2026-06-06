@@ -67,7 +67,7 @@ export default function AnalyticsTab({ centerId }: { centerId: string }) {
           { label: 'Completed',       value: summary.completedBookings.toLocaleString(),  color: 'text-green-600'   },
           { label: 'Total Revenue',   value: fmtINR(summary.totalRevenue),               color: 'text-deepsea-600' },
         ].map(c => (
-          <div key={c.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div key={c.label} className="bg-white rounded-xl border border-gray-100 shadow-md p-4">
             <p className="text-xs text-gray-500">{c.label}</p>
             <p className={`text-2xl font-bold mt-0.5 ${c.color}`}>{c.value}</p>
           </div>
@@ -208,7 +208,7 @@ function ChartCard({
   title: string; empty: boolean; emptyMsg?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-md">
       <h3 className="text-sm font-semibold text-gray-700 mb-4">{title}</h3>
       {empty
         ? <p className="text-sm text-gray-400 text-center py-10">{emptyMsg}</p>

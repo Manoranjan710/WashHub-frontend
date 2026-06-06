@@ -158,7 +158,7 @@ export default function ServicesTab({ centerId, services, onChange }: Props) {
       ) : (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-aqua-300 hover:text-aqua-500 transition-colors"
+          className="w-full border-2 border-dashed border-gray-400 rounded-xl py-3 text-sm text-gray-400 hover:border-aqua-300 hover:text-aqua-500 transition-colors"
         >
           + Add Service
         </button>

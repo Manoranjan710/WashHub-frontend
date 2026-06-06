@@ -82,7 +82,7 @@ export default function ReviewsTab({ centerId }: { centerId: string }) {
       </div>
 
       {reviews.map(review => (
-        <div key={review.id} className="border border-gray-100 rounded-xl p-4 space-y-3">
+        <div key={review.id} className="border shadow-md border-gray-100 rounded-xl p-4 space-y-3">
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">

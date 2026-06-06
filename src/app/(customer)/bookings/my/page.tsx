@@ -231,7 +231,7 @@ function BookingCard({
   const refunded = booking.payment_status === 'refunded' && booking.refund_status === 'processed';
 
   return (
-    <article className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <article className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
       {/* Card header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
         <div>

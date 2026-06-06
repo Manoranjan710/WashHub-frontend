@@ -69,7 +69,7 @@ function ReviewCard({ review }: { review: Review }) {
   const filled = Math.round(review.rating);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-5 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-800">{review.customer.name}</span>

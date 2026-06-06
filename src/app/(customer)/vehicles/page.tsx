@@ -133,7 +133,7 @@ export default function VehiclesPage() {
           ) : (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-4 text-sm text-gray-400 hover:border-aqua-300 hover:text-aqua-500 transition-colors"
+              className="w-full border-2 border-dashed border-gray-400 rounded-2xl py-4 text-sm text-gray-800 hover:border-aqua-300 hover:text-aqua-500 transition-colors"
             >
               + Add a vehicle
             </button>
@@ -158,9 +158,9 @@ function VehicleCard({
       <div>
         <p className="font-semibold text-gray-800">{vehicle.make} {vehicle.model}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-sm text-gray-500">{vehicle.plate_number}</span>
+          <span className="text-sm text-aqua-800 font-bold ">{vehicle.plate_number}</span>
           {vehicle.color && (
-            <span className="text-xs text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-gray-700 bg-aqua-300 border border-gray-100 px-2 py-0.5 rounded-full">
               {vehicle.color}
             </span>
           )}
