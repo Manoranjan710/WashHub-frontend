@@ -193,7 +193,7 @@ export default function CentersListClient({ initialData }: Props) {
           <button
             onClick={handleAiSearch}
             disabled={aiLoading || !aiQuery.trim()}
-            className="flex items-center gap-2 bg-white text-deepsea-700 font-semibold px-5 py-2.5 rounded-lg text-sm shadow hover:bg-arctic-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center gap-2 shrink-0 whitespace-nowrap bg-white text-deepsea-700 font-semibold px-4 sm:px-5 py-2.5 rounded-lg text-sm shadow hover:bg-arctic-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {aiLoading
               ? <><span className="w-4 h-4 border-2 border-deepsea-200 border-t-deepsea-600 rounded-full animate-spin inline-block" /> Thinking…</>

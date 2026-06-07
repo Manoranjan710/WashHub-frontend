@@ -153,9 +153,10 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const active    = all.filter(c => c.status === 'active').length;
-  const suspended = all.filter(c => c.status === 'suspended').length;
-  const cfg       = pendingAction ? ACTION_CONFIG[pendingAction.type] : null;
+  const active       = all.filter(c => c.status === 'active').length;
+  const suspended    = all.filter(c => c.status === 'suspended').length;
+  const statsLoading = loadingPending || loadingAll;
+  const cfg          = pendingAction ? ACTION_CONFIG[pendingAction.type] : null;
 
   return (
     <div className="space-y-6">
@@ -205,7 +206,11 @@ export default function AdminDashboardPage() {
             ].map(stat => (
               <div key={stat.label} className="bg-white rounded-xl border border-gray-200 shadow-md p-5">
                 <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className={`text-3xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+                {statsLoading ? (
+                  <div className="mt-2 h-7 w-12 rounded bg-gray-200 animate-pulse" />
+                ) : (
+                  <p className={`text-3xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+                )}
               </div>
             ))}
           </div>

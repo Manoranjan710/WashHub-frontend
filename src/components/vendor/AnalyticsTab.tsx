@@ -33,6 +33,33 @@ function fmtINR(n: number) {
   return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
+// Render percent labels inside the donut band so they never get clipped by the chart edge.
+function renderPieLabel({
+  cx, cy, midAngle, innerRadius, outerRadius, percent,
+}: {
+  cx: number; cy: number; midAngle: number;
+  innerRadius: number; outerRadius: number; percent?: number;
+}) {
+  if (!percent) return null;
+  const RAD = Math.PI / 180;
+  const r = innerRadius + (outerRadius - innerRadius) / 2;
+  const x = cx + r * Math.cos(-midAngle * RAD);
+  const y = cy + r * Math.sin(-midAngle * RAD);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      fontSize={11}
+      fontWeight={600}
+      textAnchor="middle"
+      dominantBaseline="central"
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
+
 export default function AnalyticsTab({ centerId }: { centerId: string }) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vendor', 'analytics', centerId],
@@ -173,7 +200,7 @@ export default function AnalyticsTab({ centerId }: { centerId: string }) {
                 outerRadius={72}
                 innerRadius={28}
                 paddingAngle={2}
-                label={({ percent }: { percent?: number }) => percent ? `${(percent * 100).toFixed(0)}%` : ''}
+                label={renderPieLabel}
                 labelLine={false}
               >
                 {servicePopularity.map((_, i) => (
