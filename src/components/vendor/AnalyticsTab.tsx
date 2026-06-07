@@ -34,13 +34,17 @@ function fmtINR(n: number) {
 }
 
 // Render percent labels inside the donut band so they never get clipped by the chart edge.
-function renderPieLabel({
-  cx, cy, midAngle, innerRadius, outerRadius, percent,
-}: {
-  cx: number; cy: number; midAngle: number;
-  innerRadius: number; outerRadius: number; percent?: number;
+function renderPieLabel(props: {
+  cx?: number | string; cy?: number | string; midAngle?: number;
+  innerRadius?: number | string; outerRadius?: number | string; percent?: number;
 }) {
+  const percent = props.percent;
   if (!percent) return null;
+  const cx = Number(props.cx);
+  const cy = Number(props.cy);
+  const midAngle = Number(props.midAngle);
+  const innerRadius = Number(props.innerRadius);
+  const outerRadius = Number(props.outerRadius);
   const RAD = Math.PI / 180;
   const r = innerRadius + (outerRadius - innerRadius) / 2;
   const x = cx + r * Math.cos(-midAngle * RAD);
