@@ -8,8 +8,9 @@ export interface User {
   phone?: string | null;
 }
 
+// Tokens are delivered as httpOnly cookies, so the JSON body only carries the
+// user profile.
 export interface AuthResponse {
-  accessToken: string;
   user: User;
 }
 

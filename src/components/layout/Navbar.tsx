@@ -10,7 +10,7 @@ import { api } from '@/lib/axios';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function Navbar() {
-  const { user, accessToken, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -20,7 +20,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      if (accessToken) await api.post('/auth/logout');
+      if (user) await api.post('/auth/logout');
     } catch {
       // best-effort
     } finally {

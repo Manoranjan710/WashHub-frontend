@@ -20,7 +20,7 @@ export default function LoginPage() {
 function LoginContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const { setUser, setToken } = useAuthStore();
+  const { setUser } = useAuthStore();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,6 @@ function LoginContent() {
     try {
       const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/login', form);
       setUser(data.data.user);
-      setToken(data.data.accessToken);
 
       const role = data.data.user.role;
       // Honour a ?redirect= target for customers (e.g. a center they tried to

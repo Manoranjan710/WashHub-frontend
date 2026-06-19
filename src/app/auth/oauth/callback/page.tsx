@@ -16,21 +16,19 @@ export default function OAuthCallbackPage() {
 function OAuthCallbackContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const { setUser, setToken } = useAuthStore();
+  const { setUser } = useAuthStore();
 
   useEffect(() => {
-    const token = searchParams.get('token');
     const error = searchParams.get('error');
 
-    if (error || !token) {
+    if (error) {
       router.replace('/login?error=google_failed');
       return;
     }
 
-    // Store the token first so the /auth/me call is authenticated
-    setToken(token);
-
-    api.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    // The backend already set the auth cookies before redirecting here, so the
+    // /auth/me call is authenticated by the cookie (sent via withCredentials).
+    api.get('/auth/me')
       .then(({ data }) => {
         setUser(data.data);
         const role = data.data.role as string;
@@ -40,7 +38,7 @@ function OAuthCallbackContent() {
       .catch(() => {
         router.replace('/login?error=google_failed');
       });
-  }, [searchParams, router, setToken, setUser]);
+  }, [searchParams, router, setUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

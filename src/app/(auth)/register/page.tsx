@@ -25,7 +25,7 @@ function RegisterContent() {
   const searchParams = useSearchParams();
   const defaultRole = (searchParams.get('role') as Role) || 'customer';
 
-  const { setUser, setToken } = useAuthStore();
+  const { setUser } = useAuthStore();
 
   const [form, setForm] = useState({
     name: '',
@@ -50,7 +50,6 @@ function RegisterContent() {
     try {
       const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/register', form);
       setUser(data.data.user);
-      setToken(data.data.accessToken);
 
       const redirect = form.role === 'vendor' ? '/vendor/onboarding' : '/';
       setSuccess({ message: data.message ?? 'Account created successfully!', redirect });
