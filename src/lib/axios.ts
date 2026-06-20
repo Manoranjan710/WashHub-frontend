@@ -1,7 +1,15 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const ABSOLUTE_API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+// Cookie-bearing requests must be same-origin so the auth cookie stays
+// first-party. When NEXT_PUBLIC_API_PROXY=true (set on Vercel), the browser
+// hits the relative /api path, which next.config rewrites to the backend —
+// the cookie then belongs to this domain and works in every browser. During
+// SSR and local dev we fall back to the absolute backend URL.
+const useProxy = process.env.NEXT_PUBLIC_API_PROXY === 'true';
+const API_URL = useProxy && typeof window !== 'undefined' ? '/api' : ABSOLUTE_API;
 
 // withCredentials lets the browser send/receive the httpOnly auth cookies.
 // The access token is no longer readable from JS, so there is no request
