@@ -98,7 +98,7 @@ function LoginContent() {
 
             {/* Google OAuth */}
             <a
-              href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
+              href="/api/auth/google"
               className="flex items-center justify-center gap-3 w-full border border-gray-300 shadow-md rounded-lg py-2.5 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6"
             >
               <GoogleIcon />
