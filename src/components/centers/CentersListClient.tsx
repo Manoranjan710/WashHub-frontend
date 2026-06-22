@@ -16,13 +16,6 @@ interface Props {
   initialData: PageData;
 }
 
-interface AiFilters {
-  textFilter?: string;
-  sortBy?:     'rating' | 'distance';
-  minRating?:  number;
-  radius?:     number;
-}
-
 async function fetchCenters(
   page: number,
   coords: { lat: number; lng: number } | null,
@@ -43,11 +36,13 @@ export default function CentersListClient({ initialData }: Props) {
   const [minRating, setMinRating]   = useState(0);
   const [sort, setSort]             = useState<'rating' | 'distance'>('rating');
 
-  // AI search state
-  const [aiQuery, setAiQuery]       = useState('');
-  const [aiLoading, setAiLoading]   = useState(false);
-  const [aiError, setAiError]       = useState<string | null>(null);
-  const [aiFiltersActive, setAiFiltersActive] = useState(false);
+  // AI semantic search state
+  const [aiQuery, setAiQuery]                   = useState('');
+  const [aiLoading, setAiLoading]               = useState(false);
+  const [aiError, setAiError]                   = useState<string | null>(null);
+  const [semanticResults, setSemanticResults]   = useState<CenterSearchResult[] | null>(null);
+  const [semanticDegraded, setSemanticDegraded] = useState(false);
+  const [activeQuery, setActiveQuery]           = useState('');
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +93,11 @@ export default function CentersListClient({ initialData }: Props) {
     return result;
   }, [allCenters, textFilter, minRating, sort]);
 
+  // In semantic mode the server returns ranked results; otherwise show the
+  // normal browse list. Semantic results are already filtered + ordered.
+  const inSemanticMode = semanticResults !== null;
+  const list = inSemanticMode ? semanticResults! : displayed;
+
   useEffect(() => {
     if (!sentinelRef.current) return;
     const observer = new IntersectionObserver(
@@ -139,35 +139,36 @@ export default function CentersListClient({ initialData }: Props) {
   }, []);
 
   const handleAiSearch = useCallback(async () => {
-    if (!aiQuery.trim()) return;
+    const q = aiQuery.trim();
+    if (!q) return;
     setAiLoading(true);
     setAiError(null);
     try {
-      const { data } = await api.post('/ai/search', { query: aiQuery.trim() });
-      const filters = data.data as AiFilters;
+      // Structured filters (location, radius, rating) still apply on top of
+      // the semantic ranking done server-side.
+      const params: Record<string, string | number> = { q };
+      if (coords)            { params.lat = coords.lat; params.lng = coords.lng; }
+      if (coords && radius)  params.radius = radius;
+      if (minRating > 0)     params.minRating = minRating;
 
-      if (filters.textFilter) setTextFilter(filters.textFilter);
-      if (filters.sortBy)     setSort(filters.sortBy);
-      if (filters.minRating)  setMinRating(filters.minRating);
-      if (filters.radius)     setRadius(Math.min(filters.radius, 10));
+      const { data } = await api.get('/centers/search', { params });
+      const result = data.data as { centers: CenterSearchResult[]; degraded?: boolean };
 
-      // If AI suggests distance sort but geo isn't active, request location
-      if (filters.sortBy === 'distance' && !coords) handleGeoSearch();
-
-      setAiFiltersActive(true);
+      setSemanticResults(result.centers);
+      setSemanticDegraded(!!result.degraded);
+      setActiveQuery(q);
     } catch {
-      setAiError('AI search failed. Please try the filters manually.');
+      setAiError('Search failed. Please try again.');
     } finally {
       setAiLoading(false);
     }
-  }, [aiQuery, coords, handleGeoSearch]);
+  }, [aiQuery, coords, radius, minRating]);
 
-  const handleClearAiFilters = useCallback(() => {
-    setTextFilter('');
-    setMinRating(0);
-    setSort('rating');
+  const handleClearSemantic = useCallback(() => {
+    setSemanticResults(null);
+    setSemanticDegraded(false);
+    setActiveQuery('');
     setAiQuery('');
-    setAiFiltersActive(false);
     setAiError(null);
   }, []);
 
@@ -179,7 +180,7 @@ export default function CentersListClient({ initialData }: Props) {
       {/* AI Search bar */}
       <div className="bg-gradient-to-r from-deepsea-600 to-aqua-600 rounded-2xl shadow-lg px-5 py-4 mb-4">
         <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-2 flex items-center gap-1">
-          <SparkleIcon /> AI Smart Search
+          <SparkleIcon /> AI Semantic Search
         </p>
         <div className="flex gap-2">
           <input
@@ -187,7 +188,7 @@ export default function CentersListClient({ initialData }: Props) {
             value={aiQuery}
             onChange={e => setAiQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleAiSearch(); }}
-            placeholder='Try: "foam wash near me" or "best rated interior cleaning"'
+            placeholder='Try: "full body wash with dog hair removal" or "eco-friendly steam clean"'
             className="flex-1 rounded-lg px-4 py-2.5 text-sm text-gray-800 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/60 shadow-inner"
           />
           <button
@@ -203,19 +204,26 @@ export default function CentersListClient({ initialData }: Props) {
         </div>
         {aiError && <p className="text-red-200 text-xs mt-2">{aiError}</p>}
 
-        {aiFiltersActive && (
+        {inSemanticMode && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-white/90 text-xs">Filters applied:</span>
-            {textFilter && <Chip label={`"${textFilter}"`} />}
-            {minRating > 0 && <Chip label={`${minRating}★ & above`} />}
-            {sort === 'distance' && <Chip label="Nearest first" />}
+            <span className="text-white/90 text-xs">
+              {semanticResults!.length > 0
+                ? <>Showing best matches for <Chip label={`"${activeQuery}"`} /></>
+                : <>No strong matches for <Chip label={`"${activeQuery}"`} /></>}
+            </span>
             <button
-              onClick={handleClearAiFilters}
+              onClick={handleClearSemantic}
               className="text-white/70 hover:text-white text-xs underline underline-offset-2 transition-colors"
             >
-              Clear
+              Clear search
             </button>
           </div>
+        )}
+
+        {inSemanticMode && semanticDegraded && (
+          <p className="text-amber-200/90 text-xs mt-2">
+            AI ranking is temporarily unavailable — showing keyword matches instead.
+          </p>
         )}
       </div>
 
@@ -289,7 +297,7 @@ export default function CentersListClient({ initialData }: Props) {
         <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-6">{geoError}</p>
       )}
 
-      {geoActive && (
+      {geoActive && !inSemanticMode && (
         <p className="text-sm text-deepsea-600 font-medium mb-6 flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-aqua-500 shadow-[0_0_0_3px_rgba(0,180,204,0.2)]" />
           {displayed.length} {displayed.length === 1 ? 'center' : 'centers'} within {radius} km of your location
@@ -297,11 +305,11 @@ export default function CentersListClient({ initialData }: Props) {
       )}
 
       {/* Grid */}
-      {isLoading ? (
+      {!inSemanticMode && isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }, (_, i) => <CenterCardSkeleton key={i} />)}
         </div>
-      ) : isError ? (
+      ) : !inSemanticMode && isError ? (
         <div className="text-center py-20">
           <p className="text-gray-500 text-lg">Failed to load centers.</p>
           <button
@@ -311,33 +319,52 @@ export default function CentersListClient({ initialData }: Props) {
             Try again
           </button>
         </div>
-      ) : displayed.length === 0 ? (
+      ) : list.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-500 text-lg">No centers found{textFilter ? ` matching "${textFilter}"` : geoActive ? ' near your location' : ''}.</p>
-          {(textFilter || minRating > 0) && (
-            <button
-              onClick={() => { setTextFilter(''); setMinRating(0); }}
-              className="mt-4 text-sm text-aqua-600 underline underline-offset-2 hover:text-aqua-700"
-            >
-              Clear filters
-            </button>
+          {inSemanticMode ? (
+            <>
+              <p className="text-gray-500 text-lg">No centers closely match &ldquo;{activeQuery}&rdquo;.</p>
+              <p className="text-gray-400 text-sm mt-2">
+                Try describing the service differently, or widen your filters.
+              </p>
+              <button
+                onClick={handleClearSemantic}
+                className="mt-4 text-sm text-aqua-600 underline underline-offset-2 hover:text-aqua-700"
+              >
+                Back to all centers
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-500 text-lg">No centers found{textFilter ? ` matching "${textFilter}"` : geoActive ? ' near your location' : ''}.</p>
+              {(textFilter || minRating > 0) && (
+                <button
+                  onClick={() => { setTextFilter(''); setMinRating(0); }}
+                  className="mt-4 text-sm text-aqua-600 underline underline-offset-2 hover:text-aqua-700"
+                >
+                  Clear filters
+                </button>
+              )}
+            </>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayed.map(center => <CenterCard key={center.id} center={center} />)}
+          {list.map(center => <CenterCard key={center.id} center={center} />)}
         </div>
       )}
 
-      {/* Infinite scroll sentinel */}
-      <div ref={sentinelRef} className="py-6 flex justify-center">
-        {isFetchingNextPage && (
-          <span className="w-6 h-6 border-2 border-aqua-200 border-t-aqua-500 rounded-full animate-spin inline-block" />
-        )}
-        {!hasNextPage && allCenters.length > 0 && !textFilter && (
-          <p className="text-xs text-gray-400">All centers loaded</p>
-        )}
-      </div>
+      {/* Infinite scroll sentinel — browse mode only */}
+      {!inSemanticMode && (
+        <div ref={sentinelRef} className="py-6 flex justify-center">
+          {isFetchingNextPage && (
+            <span className="w-6 h-6 border-2 border-aqua-200 border-t-aqua-500 rounded-full animate-spin inline-block" />
+          )}
+          {!hasNextPage && allCenters.length > 0 && !textFilter && (
+            <p className="text-xs text-gray-400">All centers loaded</p>
+          )}
+        </div>
+      )}
     </section>
   );
 }
