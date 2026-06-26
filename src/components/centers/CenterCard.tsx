@@ -15,7 +15,7 @@ function StarRating({ rating }: { rating: number }) {
     </span>
   );
 }
-
+ 
 const CenterCard = memo(function CenterCard({ center }: { center: CenterSearchResult }) {
   const user = useAuthStore((s) => s.user);
 
