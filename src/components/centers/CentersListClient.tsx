@@ -116,17 +116,38 @@ export default function CentersListClient({ initialData }: Props) {
   const handleRadiusChange = useCallback((r: number) => setRadius(r), []);
 
   const handleGeoSearch = useCallback(async () => {
-    if (!navigator.geolocation) { setGeoError('Geolocation not supported.'); return; }
+    if (!navigator.geolocation) { setGeoError('Geolocation is not supported by your browser.'); return; }
     setGeoLoading(true);
     setGeoError(null);
+
+    // The browser only shows its native permission prompt when state is 'prompt'.
+    // If already 'denied', getCurrentPosition fires the error callback immediately
+    // with no dialog — detect this early and guide the user instead.
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        if (perm.state === 'denied') {
+          setGeoError("Location is blocked for this site. Click the lock icon in your browser's address bar, set Location to \"Allow\", then try again.");
+          setGeoLoading(false);
+          return;
+        }
+      } catch {
+        // Permissions API unavailable — fall through to getCurrentPosition
+      }
+    }
+
     navigator.geolocation.getCurrentPosition(
       pos => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setSort('distance');
         setGeoLoading(false);
       },
-      () => {
-        setGeoError('Location access denied. Please allow access and try again.');
+      (err) => {
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location access denied. Click the lock icon in your browser's address bar, set Location to \"Allow\", then try again."
+            : 'Could not get your location. Please try again.',
+        );
         setGeoLoading(false);
       },
     );

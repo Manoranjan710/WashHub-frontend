@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/axios';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 import { useToast } from '@/components/ui/Toast';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
@@ -365,6 +366,7 @@ function ReschedulePanel({
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [submitting, setSubmitting]     = useState(false);
+  const [successSlot, setSuccessSlot]   = useState<{ date: string; start_time: string } | null>(null);
 
   async function loadSlots(d: string) {
     setSlotsLoading(true);
@@ -388,7 +390,7 @@ function ReschedulePanel({
       const { data } = await api.patch(`/bookings/${bookingId}/reschedule`, {
         new_slot_id: selectedSlot.id,
       });
-      onRescheduled({
+      setSuccessSlot({
         date:       data.data.slot.date,
         start_time: data.data.slot.start_time,
       });
@@ -401,6 +403,17 @@ function ReschedulePanel({
   }
 
   return (
+    <>
+    <SuccessDialog
+      open={successSlot !== null}
+      title="Booking Rescheduled!"
+      message={successSlot ? `Your booking has been moved to ${formatDate(successSlot.date)} at ${formatTime(successSlot.start_time)}.` : ''}
+      actionLabel="Done"
+      onClose={() => {
+        if (successSlot) onRescheduled(successSlot);
+        setSuccessSlot(null);
+      }}
+    />
     <div className="border-t border-gray-100 px-5 py-5 bg-arctic-100/20 space-y-4">
       <p className="text-sm font-semibold text-deepsea-600">Choose a new date &amp; time</p>
 
@@ -465,6 +478,7 @@ function ReschedulePanel({
         </button>
       </div>
     </div>
+    </>
   );
 }
 
