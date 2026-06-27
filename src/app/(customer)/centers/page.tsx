@@ -69,7 +69,8 @@ export default function CentersPage() {
           fill
           className="object-cover object-center"
           priority
-          quality={80}
+          quality={60}
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-deepsea-600/70" />
         <div className="relative z-10">
