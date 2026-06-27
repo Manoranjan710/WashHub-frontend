@@ -263,6 +263,7 @@ export default function CentersListClient({ initialData }: Props) {
         <select
           value={minRating}
           onChange={e => setMinRating(Number(e.target.value))}
+          aria-label="Minimum rating"
           className="border border-aqua-100 rounded-lg px-3 py-2 text-sm text-deepsea-600 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-aqua-300"
         >
           <option value={0}>Any rating</option>
@@ -275,6 +276,7 @@ export default function CentersListClient({ initialData }: Props) {
         <select
           value={sort}
           onChange={e => setSort(e.target.value as 'rating' | 'distance')}
+          aria-label="Sort order"
           className="border border-aqua-100 rounded-lg px-3 py-2 text-sm text-deepsea-600 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-aqua-300"
         >
           <option value="rating">Sort: Top rated</option>
@@ -288,6 +290,7 @@ export default function CentersListClient({ initialData }: Props) {
             onChange={e => handleRadiusChange(Number(e.target.value))}
             disabled={!geoActive || geoLoading}
             title={!geoActive ? 'Enable location first to filter by radius' : undefined}
+            aria-label="Search radius"
             className="px-3 py-2 text-sm text-deepsea-600 bg-transparent focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed border-r border-aqua-300"
           >
             {[2, 5, 7, 10].map(r => (
@@ -298,7 +301,7 @@ export default function CentersListClient({ initialData }: Props) {
           <button
             onClick={handleGeoSearch}
             disabled={geoLoading}
-            className="flex items-center gap-2 bg-aqua-500 hover:bg-aqua-600 active:bg-aqua-700 disabled:opacity-60 text-white px-4 py-2 text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-deepsea-600 hover:bg-deepsea-700 active:bg-deepsea-800 disabled:opacity-60 text-white px-4 py-2 text-sm font-medium transition-colors"
           >
             {geoLoading
               ? <><span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Searching…</>

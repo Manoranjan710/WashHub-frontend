@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import CentersListClient from '@/components/centers/CentersListClient';
 
 // SSR: listing is personalised by geo + pagination; no caching at the page level.
@@ -28,11 +29,15 @@ export default async function CentersPage() {
   return (
     <>
       {/* Hero */}
-      <section
-        className="relative pt-24 pb-20 text-center bg-cover bg-center"
-        style={{ backgroundImage: "url('/car_wash.jpg')" }}
-      >
-        {/* Dark teal overlay for text legibility */}
+      <section className="relative pt-24 pb-20 text-center overflow-hidden">
+        <Image
+          src="/car_wash.jpg"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+          quality={80}
+        />
         <div className="absolute inset-0 bg-deepsea-600/70" />
         <div className="relative z-10">
           <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">

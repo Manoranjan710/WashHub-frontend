@@ -92,7 +92,7 @@ export default function Navbar() {
                 ) : (
                   <>
                     <Link href="/login"    className="text-sm font-medium text-gray-600 hover:text-aqua-500 transition-colors">Login</Link>
-                    <Link href="/register" className="text-sm font-medium px-4 py-2 bg-aqua-500 text-white rounded-lg hover:bg-aqua-600 transition-colors">
+                    <Link href="/register" className="text-sm font-medium px-4 py-2 bg-deepsea-600 text-white rounded-lg hover:bg-deepsea-700 transition-colors">
                       Get Started
                     </Link>
                   </>
